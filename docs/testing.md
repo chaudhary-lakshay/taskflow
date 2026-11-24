@@ -86,6 +86,71 @@ The backend fake in Board.test.tsx filters, sorts and pages like the real endpoi
 
 Browser smoke (24 Nov, headless Chromium via `playwright-cli`, real backend through the Vite proxy, freshly registered user; manual run): empty title shows "Title is required"; four tasks created through the form sorted by due date with the dateless one last; two past-dated rows inserted by SQL (the API refuses past dates on create) showed Overdue = 1 and an "Overdue" label only on the open one, not on the DONE one; priority filter High showed only High tasks in the columns while the summary stayed at 6 and the URL held `?priority=HIGH`; sort "Latest first" reversed the order; changing a status moved the card and updated the summary and Overdue at once (Overdue 1 → 0 after the past-due task became Done); edit changed priorities; delete asked first and Total fell from 6 to 5; after a reload the board and summary were the same. At 375 px: one column, scrollWidth 375 = innerWidth. At 1280 px: three columns, no overflow. Console: 0 errors. Screenshots are in `%TEMP%/taskflow-smoke`, not in the repo. A first pass used a wrong `playwright-cli` command (`select-option`, which does not exist; the command is `select`), so the priorities of the first four tasks were set afterwards through the edit form. Not covered in the browser: the status-change failure path and paging beyond 10 tasks per column (both are covered by unit tests only); other browsers; screen readers.
 
+## T06 traceability (page-06 test matrix and assignment testing requirements)
+Test names are the backtick names in the source. Backend: `backend/src/test/kotlin/com/taskflow/` (abbreviated here to `…/`); frontend: `frontend/src/`. "Manual" means the browser or curl runs described below, not an automated suite.
+
+| Area | Scenario | Covered by | Status |
+|---|---|---|---|
+| Auth | register valid | `…/auth/AuthApiIT` register returns 201 with a safe user, normalised email and a BCrypt hash; `AuthServiceTest` register normalises email, trims name and stores only the hash | covered |
+| Auth | duplicate normalised email | `AuthApiIT` duplicate email, in any letter case, is 409; `AuthServiceTest` (5 constraint-classification tests); `AuthRaceIT` two concurrent registrations | covered |
+| Auth | invalid fields | `AuthApiIT` invalid input gives 400 with field-level errors, password bounds (8 chars / 72 bytes), email and name limits, malformed JSON; `PasswordPolicyTest` | covered |
+| Auth | wrong password | `AuthApiIT` wrong password and unknown email give the same 401; `AuthServiceTest` login with a wrong password / unknown email | covered |
+| Auth | hash, not raw | `AuthApiIT` register … BCrypt hash in the database; `AuthServiceTest` stores only the hash; `DemoDataSeederTest` | covered |
+| Auth | valid / expired / malformed token | `AuthApiIT` garbage, expired, forged, wrong-issuer and bad-subject tokens are all 401 in the standard shape, no token is 401 with a Bearer challenge; `JwtTokenTest` (10 cases, real signed JWTs) | covered |
+| Projects | list own only | `ProjectApiIT` create … the list shows it; `OwnerScopingIT` project lists show only the caller's projects; `RepositoryIT` project list is owner scoped | covered |
+| Projects | create uses principal | `OwnerScopingIT` owner comes from the token - a client supplied ownerId is ignored; `ProjectServiceTest` create stores the project under the caller | covered |
+| Projects | foreign access rejected | `OwnerScopingIT` B gets 404 for … A's project; `ProjectServiceTest` summary of a foreign or missing project is NotFound | covered |
+| Tasks | required title, 120 / 121 | `TaskApiIT` title is required, trimmed, and at most 120 characters; `SchemaIT` task title is limited to 120 characters | covered |
+| Tasks | due today / past / null | `TaskApiIT` dueDate on create may be today, future or absent, but not in the past; update keeps an unchanged past due date…; `TaskServiceTest` create due date…, update keeps/rejects… | covered |
+| Tasks | unknown assignee | `TaskApiIT` an unknown assignee is a 400 field error and nothing is saved; `TaskServiceTest` | covered |
+| Tasks | status and priority enum | `TaskApiIT` bad enum values, bad dates and bad types are 400 field errors; `SchemaIT` status and priority accept only the enum values | covered |
+| Tasks | create / update / delete / PATCH | `TaskApiIT` create applies defaults…, update replaces all editable fields…, patch changes only the status - every transition is allowed, delete returns 204… and a second delete is 404 | covered |
+| Ownership | B tries A's list / create / update / PATCH / delete / summary | `OwnerScopingIT` B gets 404 for list, create, update, patch, delete and summary (two real tokens, DB unchanged); same 404 body for foreign and missing; B's project invisible to A | covered |
+| Ownership | assigned B still cannot access | `OwnerScopingIT` fixture assigns A's task to B; `TaskRepositoryScopeIT` … even when assigned; `RepositoryIT` task lookup requires the project owner, even for the assignee | covered |
+| Ownership | every endpoint needs a token | `OwnerScopingIT` every new endpoint needs a token; `AuthApiIT` only register, login and health are public | covered |
+| Query | combined filters, empty result | `TaskListIT` status, priority and assignee filters work alone and combined; **new (T06)** combined filters with paging return each matching task once, in order, and never a non-matching one | covered (gap closed) |
+| Query | page boundaries, size limit | `TaskListIT` page metadata and boundaries (size 1/100, page beyond last, empty project); invalid sort, direction, page and size are 400 field errors (size 0/101/-5/"many") | covered |
+| Query | stable tie-break, high priority first, null dates last | `TaskListIT` priority sorts by rank HIGH, MEDIUM, LOW; due date … undated tasks always last; ties are broken by id; paging 45 tasks with many ties returns every task exactly once | covered |
+| Query | invalid sort | `TaskListIT` invalid sort, direction, page and size are 400 field errors; several invalid parameters are all reported together | covered |
+| Summary | all statuses, overdue not DONE, today not overdue, null date | `ProjectApiIT` summary counts statuses and overdue by the rule; empty project and filters ignored; overdue equals the flags in the list; `ProjectServiceTest`; `TaskServiceTest` overdue flag … | covered |
+| Summary | status transitions | **new (T06)** `ProjectApiIT` summary follows status transitions and deletes, including the overdue count (TODO → IN_PROGRESS → DONE → TODO → delete) | covered (gap closed) |
+| UI | task card overdue | `features/board/TaskCard.test.tsx` overdue label and class; not overdue when due today / future / no date / DONE | covered |
+| UI | form validation and submission | `features/board/TaskForm.test.tsx` (8 tests: create and edit, D04, assignee clear, server field errors); `auth/validation.test.ts` validateTask | covered |
+| UI | status update error | `features/board/Board.test.tsx` on failure keeps the old status, shows an error, and Retry works | covered |
+| UI | loading / empty / error | `Board.test.tsx` board states (loading, empty, column error + Retry, summary error + Retry); `ProjectsPage.test.tsx` | covered |
+| UI | login and token expiry | `features/auth/LoginPage.test.tsx`; `auth/unauthorized.test.tsx` a 401 clears session and cache and redirects to /login once with no second request, a late 401 for an old token changes nothing; `auth/routing.test.tsx` expired stored session ignored | covered |
+| UI | browser smoke | T04, T05 and T06 manual runs (below) | manual |
+| E2E | register A/B, A creates project and tasks, filter/sort, status, reload, delete, logout, mobile | T06 manual pass (below) | manual, not automated |
+| Setup | clean clone, compose starts, migration applies, seed works, docs match commands | `bash scripts/verify.sh` in a fresh clone (T00, T05, T06); `PostgresSmokeIT`, `SchemaIT`; `DemoSeedIT` (two users, owned projects, varied tasks, idempotent) | covered for verify, migrations and seed; README commands are re-read, not executed by a test |
+
+| Assignment requirement (R11) | Evidence |
+|---|---|
+| JUnit 5 + MockK service tests | `AuthServiceTest` (11), `ProjectServiceTest` (4), `TaskServiceTest` (15), `UserLookupServiceTest` (2), `DemoDataSeederTest` (5), `MockkBaselineTest`; injected `Clock` in `TaskServiceTest` |
+| At least one Spring integration test | 12 classes extending `PostgresIT` / `ApiIT` (`@SpringBootTest` + MockMvc + real PostgreSQL 17 in Testcontainers), e.g. `OwnerScopingIT`, `TaskApiIT`, `TaskListIT` |
+| At least two Jest + RTL component tests | `TaskCard.test.tsx`, `TaskForm.test.tsx`, `Board.test.tsx`, `ProjectsPage.test.tsx`, `LoginPage.test.tsx`, `RegisterPage.test.tsx` (user-event, accessible roles, isolated QueryClient, mocked API) |
+
+Gaps and limits, honestly: no automated browser E2E (manual only); frontend tests mock the API, so UI-to-server contract drift is caught only by the manual pass; no test of a real token expiring in the browser (the expiry paths are unit tested with a 401); the status-change failure path and paging beyond 10 tasks per column were not exercised in the browser; README command text is not executed by any test; other browsers, screen readers and keyboard-only use were not tested.
+
+### T06 mutation checks (one rule each, file copied first, one change, run, restore from the copy, `git diff` clean afterwards)
+| Rule | One-line change | Tests that failed |
+|---|---|---|
+| Owner scoping of the task page query | removed the owner predicate in `TaskSpecifications.scoped` | `TaskRepositoryScopeIT` (3 of 19 run: foreign owner empty with every filter, foreign project, existing project) |
+| Overdue rule, backend | `TaskRules.isOverdue`: `isBefore(today)` → `!isAfter(today)` (today counted overdue) | `TaskServiceTest` overdue flag…; `ProjectApiIT` summary overdue count equals the number of overdue flags… (2 of 46 run) |
+| Overdue rule, frontend | `dates.ts`: `dueDate < today` → `dueDate <= today` | `TaskCard.test.tsx` (1 of 25 run: not overdue when due today) |
+| Due date not in the past on create | `TaskService.create`: `isBefore(today)` → `isBefore(today.minusDays(1))` | `TaskServiceTest` create due date… yesterday is rejected; `TaskApiIT` dueDate on create… (2 of 27 run) |
+
+Observation: the first relay hook treated these deliberate failures as real ones and escalated; nothing was broken and no production file changed.
+
+### T06 coverage (information, not a gate)
+`./gradlew test` now also writes a JaCoCo report (`backend/build/reports/jacoco/test/html/index.html`, XML next to it). Backend line coverage: **457 of 471 lines (97.0 %)** with 128 tests. The number says what the tests execute, not that they assert the right thing; the mutation checks above are the better evidence for the three key rules. No frontend coverage was measured.
+
+### T06 end-to-end manual pass (24 Nov, headless Chromium via `playwright-cli`, real backend + Vite proxy, curl for the second user)
+- User A registered in the browser and created a project and tasks through the form (priorities Low/Medium/High, with and without a due date, one unassigned task); statuses changed through the card dropdown to cover To Do, In Progress and Done; one overdue task seeded by SQL (the API refuses past dates on create). Summary showed To Do 3, In Progress 1, Done 1, Overdue 1, Total 5; moving the overdue task to Done made Overdue 0.
+- Priority filter High showed only the two High tasks while the summary stayed at 4 total; "Latest first" reversed the order; delete asked first (Total 5 → 4); reload kept the same board and summary; logout went to /login and the board URL redirected back to /login.
+- 375 px: scrollWidth 375 = innerWidth, one column; 1280 px: three columns. Console: 0 errors.
+- User B (registered by curl, then also logged in through the browser): `GET /api/projects` → `[]`; with A's project and task: list, summary, create, PUT, PATCH and DELETE all returned **404**; no token and a garbage token returned **401**; A's summary afterwards was unchanged. In the browser B saw the empty project list and "Project not found" on A's board URL.
+- Screenshots in `%TEMP%/taskflow-smoke`, not in the repo. All processes, the Gradle daemon and the db container were stopped afterwards (no listener on 5173/8080).
+
 ## Environment notes
 - Docker Desktop must be running for Testcontainers (verified with Docker Engine 29.5.3, Testcontainers 1.21.4).
 - Integration tests inject a test-only `taskflow.jwt.secret` (see `PostgresIT`); `bootRun` needs a real `JWT_SECRET` in the environment.
