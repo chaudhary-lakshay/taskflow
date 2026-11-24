@@ -9,6 +9,9 @@ import org.testcontainers.containers.PostgreSQLContainer
 @SpringBootTest
 abstract class PostgresIT {
     companion object {
+        /** Test-only key (32 bytes, base64). Never used outside tests. */
+        const val TEST_JWT_SECRET = "dGVzdC1vbmx5LWp3dC1zZWNyZXQtMzItYnl0ZXMhISEh"
+
         private val postgres = PostgreSQLContainer("postgres:17").also { it.start() }
 
         @JvmStatic
@@ -17,6 +20,7 @@ abstract class PostgresIT {
             registry.add("spring.datasource.url", postgres::getJdbcUrl)
             registry.add("spring.datasource.username", postgres::getUsername)
             registry.add("spring.datasource.password", postgres::getPassword)
+            registry.add("taskflow.jwt.secret") { TEST_JWT_SECRET }
         }
     }
 }

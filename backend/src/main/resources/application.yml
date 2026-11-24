@@ -13,6 +13,11 @@ spring:
     enabled: true
 
 taskflow:
+  jwt:
+    # base64, at least 32 bytes, e.g. `openssl rand -base64 32`. No default: startup fails without it.
+    secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:taskflow}
+    ttl-seconds: ${JWT_TTL_SECONDS:3600}
   demo:
     password: ${DEMO_PASSWORD:}
 
