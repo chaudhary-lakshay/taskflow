@@ -5,7 +5,7 @@ Status: T00 baseline only, no features yet.
 
 ## Prerequisites
 - JDK 17+ to launch Gradle (the build downloads Java 21 itself via the Gradle toolchain resolver)
-- Node 24, Docker (Compose v2)
+- Node ^24.11.0 (Babel 8 needs it; 24.14.0 tested, see `frontend/.nvmrc`), Docker (Compose v2)
 
 ## Run locally
 ```bash
@@ -21,6 +21,9 @@ npm ci && npm run dev
 ```bash
 scripts/verify.sh   # backend tests (Testcontainers) + frontend lint, typecheck, Jest, build
 ```
+
+## Docs
+Scope, API contract, architecture, decisions and test strategy: `docs/`. Items marked ASSUMPTION there are unconfirmed design defaults.
 
 ## Notes
 - Spring Boot 3.5 is out of free support (since 2026-06-30); kept because the assignment requires Boot 3.x.
