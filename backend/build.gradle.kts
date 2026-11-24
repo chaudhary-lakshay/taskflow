@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "1.9.25"
+    jacoco // coverage report only (build/reports/jacoco), not a gate
     kotlin("plugin.spring") version "1.9.25"
     kotlin("plugin.jpa") version "1.9.25"
     id("org.springframework.boot") version "3.5.16"
@@ -52,7 +53,10 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("-Duser.timezone=UTC")
+    finalizedBy(tasks.jacocoTestReport)
 }
+
+tasks.jacocoTestReport { reports { xml.required = true; html.required = true } }
 
 tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun> {
     jvmArgs("-Duser.timezone=UTC")
