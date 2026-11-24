@@ -61,6 +61,19 @@ Mutation checks (one change each, restored): `findByIdAndOwnerId` ignoring the o
 
 Query plans (EXPLAIN ANALYZE on PostgreSQL 17 with 2,003 projects and 100,007 tasks; one project had 10,000 tasks): every main query used the existing indexes: lists use `idx_tasks_project_status_id` (status filter) or the project index plus a top-N sort (about 5.7 ms worst case for the 10,000-task project), counts and the summary use the same indexes (1 to 2 ms), the overdue count uses `idx_tasks_project_due_date_id`, the owner join uses `idx_projects_owner_id`, task by id uses the primary key. No index was added. The plans are dominated by the per-project row count, so they say little about much larger projects.
 
+## T04 frontend tests (Jest 30 + RTL + user-event, isolated QueryClient with retries off)
+| Suite | Tests | What it proves |
+|---|---|---|
+| validation.test.ts | 4 | rules match the backend: name 100, email 254, password 8 characters and 72 bytes (é x37 is rejected), login minimal, project 120/2000 |
+| api/http.test.ts | 6 | relative /api path, bearer header, error normalisation with fieldErrors, 401 with token ends the session once, 401 without token does not, 204 / non-JSON error / network failure |
+| LoginPage.test.tsx | 4 | validation without API call, trimmed submit, session in sessionStorage (not localStorage), generic invalid-credentials message, server field errors |
+| RegisterPage.test.tsx | 5 | validation incl. 72 bytes, register then login with the same credentials, failed auto-login goes to /login and registers once, duplicate email shown on the field |
+| routing.test.tsx | 7 | protected redirect without calling the API, / redirect, return to the wanted page after login, signed-in user skips /login, unknown project, logout clears session and query cache, expired stored session ignored |
+| unauthorized.test.tsx (real http layer, fake fetch) | 2 | a 401 clears session and cache, redirects to /login once with a notice, and no second request is sent (no loop); a 500 shows an error with Retry and keeps the session |
+| ProjectsPage.test.tsx | 9 | loading, list, empty, error with working Retry; create modal: focus on first field, required name, 120 limit, success refreshes the list and returns focus, server field errors keep it open, Escape/Cancel/Tab wrap |
+
+Not tested in a real browser: layout at 375 px and desktop, and the visual states, were not checked by a person or a browser run; only the API through the Vite proxy was exercised by hand (see the Notion T04 section).
+
 ## Environment notes
 - Docker Desktop must be running for Testcontainers (verified with Docker Engine 29.5.3, Testcontainers 1.21.4).
 - Integration tests inject a test-only `taskflow.jwt.secret` (see `PostgresIT`); `bootRun` needs a real `JWT_SECRET` in the environment.

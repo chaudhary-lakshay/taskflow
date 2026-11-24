@@ -18,3 +18,16 @@ erDiagram
 ```
 
 HLD/UML and the persistence model live in the Notion plan (page 02) and are mirrored here when T01 starts. Diagrams go in `docs/diagrams/`.
+
+## Frontend (T04)
+```
+main.tsx → QueryClientProvider → BrowserRouter → AuthProvider → App (Routes)
+App: /login, /register | RequireAuth → /projects, /projects/:id | / and * → /projects
+pages → hooks (useProjects, useCreateProject: TanStack Query) → api/projects.ts, api/auth.ts → api/http.ts → fetch('/api/...')
+```
+- `api/http.ts`: the only `fetch`; adds `Authorization: Bearer`, maps failures to `ApiError {status, code, message, fieldErrors}` (network failure = status 0); a 401 on a request that carried a token calls `onUnauthorized`, a 401 without a token (wrong password) does not.
+- `auth/AuthContext`: session in `sessionStorage` (`auth/session.ts`, with an expiry check on load); on logout or 401 it clears storage, state and the query cache (`queryClient.clear()`), and it also clears the cache when a new session starts. After the first 401 the login page sends no request, so there is no redirect loop.
+- Query keys: `['user', userId, 'projects']`.
+- Reusable components: `Button`, `FormField` (label, aria-invalid, aria-describedby, role=alert errors), `Modal` (focus moves in, Tab wraps, Escape closes, focus returns to the opener), `AppHeader`.
+- Client validation mirrors the backend (`auth/validation.ts`); the server stays the authority and its `fieldErrors` are shown next to the fields.
+- The backend has no single-project endpoint, so `/projects/:id` finds the project in the cached list.

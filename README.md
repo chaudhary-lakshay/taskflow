@@ -1,7 +1,7 @@
 # TaskFlow
 
 Task-management app (take-home): Kotlin + Spring Boot 3.5 backend, React + TypeScript frontend, PostgreSQL 17.
-Status: backend complete through T03 (persistence, auth, projects, tasks, summary). The React screens (T04+) are not built yet.
+Status: backend complete through T03 (persistence, auth, projects, tasks, summary). Frontend through T04: register, login, logout, protected routes, projects list and create. The task board and task forms (T05) are not built yet.
 
 ## Prerequisites
 - JDK 17+ to launch Gradle (the build downloads Java 21 itself via the Gradle toolchain resolver)
@@ -15,7 +15,7 @@ docker compose up -d db
 cd backend
 DB_PASSWORD=<same value> JWT_SECRET=<generated value> ./gradlew bootRun   # Windows: gradlew.bat; health: http://localhost:8080/actuator/health
 cd ../frontend
-npm ci && npm run dev
+npm ci && npm run dev   # http://localhost:5173, /api is proxied to http://localhost:8080 (no CORS needed)
 ```
 
 Demo data (optional): run the backend with `--args='--spring.profiles.active=demo'` and `DEMO_PASSWORD=<your choice>` set. It creates `alice.demo@example.test` and `bob.demo@example.test` (both use that password) with sample projects and tasks. Without `DEMO_PASSWORD` the demo profile refuses to start. You can then log in with `POST /api/auth/login`.
@@ -29,6 +29,15 @@ Demo data (optional): run the backend with `--args='--spring.profiles.active=dem
 
 ## Project and task API (T03)
 All need `Authorization: Bearer <token>` and are owner-only (someone else's project or task is a 404): `GET/POST /api/projects`, `GET/POST /api/projects/{id}/tasks` (filters `status`, `priority`, `assigneeId`; `sortBy=dueDate|priority`, `direction=asc|desc`, `page`, `size` up to 100), `PUT /api/tasks/{id}`, `PATCH /api/tasks/{id}/status`, `DELETE /api/tasks/{id}`, `GET /api/projects/{id}/summary`. Extra, beyond the assignment: `GET /api/users?query=` (assignee lookup, id and name only). Details: `docs/api-contract.md`.
+
+## Frontend (T04)
+React 19 + TypeScript + Vite, React Router, TanStack Query, plain CSS (no UI framework). Routes: `/login`, `/register`, `/projects`, `/projects/:id` (a placeholder until the board in T05); `/` redirects to `/projects`; logged-out visitors are sent to `/login` and come back to where they were headed.
+
+**State management choice.** *Server state* (the project list) lives in **TanStack Query**: caching, loading and error states and refetch after a mutation come for free, and query keys start with the user id so one user's data is never shown to another. *Session state* (who is signed in, the token) is small, global and changes rarely, so a plain **React Context** (`AuthContext`) is enough; no Redux. Form fields and modal state stay local to their components. The session is cleared, together with the whole query cache, on logout and on any 401.
+
+**Where the token lives (D09).** `sessionStorage`, so a reload in the same tab keeps you signed in and closing the tab does not. Trade-off: JavaScript on the page can read it, so an XSS bug would expose it; there is no refresh token or cookie. All HTTP goes through one wrapper (`src/api/http.ts`) that adds the bearer header and turns errors into the backend error shape; components never call `fetch`. The browser only talks to its own origin (Vite proxies `/api`), and no secret is in any `VITE_` variable.
+
+Tests: Jest 30 + React Testing Library + user-event. `react-router` ships ES modules only, so `jest.config.cjs` lets Babel transform it, and a tiny Babel plugin replaces `import.meta` (Jest only).
 
 ## Verify
 ```bash
