@@ -1,0 +1,27 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# build output
+build/
+.gradle/
+node_modules/
+dist/
+coverage/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# assignment material and private agent config
+*.docx
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+AGENTS.local.md
