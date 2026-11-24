@@ -41,7 +41,8 @@
 - The password rule lives in one place (`PasswordPolicy`, used by `@ValidPassword` on registration and by the demo seeder). Login only bounds the length (72 bytes) and does not enforce the minimum.
 - The dummy hash for unknown-email logins is built when `AuthService` is constructed; every login performs exactly one `matches()`. Timing equality is not claimed: one local sample showed medians of 67.8 ms (wrong password) and 63.8 ms (unknown email), not a proof.
 ## T03 decisions
-- `ProjectRepository` and `TaskRepository` are bare `Repository` interfaces: no unscoped finder exists (resolves the T02 review note). Specification queries are always built from `scoped(projectId, ownerId)`.
+- `ProjectRepository` and `TaskRepository` are bare `Repository` interfaces with a closed method list (resolves the T02 review note). `TaskRepository` does not extend `JpaSpecificationExecutor` (T03 re-review): the filtered list is `TaskPageQuery.findPage(ownerId, projectId, query)`, a custom fragment that always ANDs the project and owner predicates (Specification pattern kept, used internally). `RepositoryGuardTest` fails if any other method appears; `save`, `saveAll`, `delete`, `flush` act on entities already fetched through a scoped query.
+- `GET /api/users` without `query` returns the same field-level 400 (`fieldErrors.query`) as a too-short query.
 - Task list: the service checks project ownership first (404), then the spec also scopes by owner. Omitted `sortBy` = dueDate. Undated tasks always last. Ties by id ascending. **[ASSUMPTION]** sort default.
 - PUT requires title, status and priority; description, dueDate, assigneeId may be null to clear. **[ASSUMPTION]**
 - Description limit 2000 characters for projects and tasks. **[ASSUMPTION]**
