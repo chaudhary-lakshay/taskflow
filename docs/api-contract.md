@@ -1,6 +1,6 @@
 # API contract
 
-JSON, camelCase, ISO dates, numeric ids, `Authorization: Bearer <jwt>`. Status: **proposal**, confirmed in OpenAPI when implemented. Implemented so far (T02): `POST /api/auth/register` and `POST /api/auth/login`, the error shape, and bearer-token protection of everything else. The remaining endpoints arrive in T03.
+JSON, camelCase, ISO dates, numeric ids, `Authorization: Bearer <jwt>`. Status: **implemented** (T02 auth, T03 projects/tasks/summary/user lookup). OpenAPI is optional bonus work and not done.
 
 | Method | Path | Request / query | Success |
 |---|---|---|---|
@@ -37,6 +37,18 @@ The first ten rows are the assignment's required endpoints.
 - Token: HS256 JWT, claims `iss`, `sub` (numeric user id), `iat`, `exp` (default 3600 s). The resource server checks signature, algorithm (HS256 only), expiry (30 s skew), issuer and a positive numeric subject; `exp` is required.
 - Public endpoints: register, login, `GET /actuator/health` (infrastructure exception). Everything else, including unknown paths, returns 401 without a valid token.
 - Owner id is taken from the JWT subject only (`Jwt.userId()`); no request field can set it.
+
+## Projects and tasks (implemented, T03)
+- Every endpoint below needs a bearer token; the owner is always the token's subject. A project or task that is missing **or owned by someone else** gives the same 404 `NOT_FOUND` body (never 403). Being assigned a task grants no access.
+- `POST /api/projects`: `name` required, max 120 (trimmed); `description` optional, max 2000 **[ASSUMPTION: limit]**. A client-sent `ownerId` is ignored.
+- `GET /api/projects/{id}/tasks` query: `status`, `priority`, `assigneeId` (filters combine with AND); `sortBy` = `dueDate` (default) or `priority`; `direction` = `asc`/`desc` (case-insensitive; default asc for dueDate, desc for priority); `page` >= 0 (default 0); `size` 1..100 (default 20). Anything else gives 400 `VALIDATION_ERROR` with a field error per bad parameter. Omitted `sortBy` means dueDate **[ASSUMPTION]**.
+- Ordering: dueDate ascending or descending with tasks without a date always last; priority by rank HIGH > MEDIUM > LOW; ties always by id ascending, so pages never repeat or skip rows. A page past the end is an empty page, not an error.
+- `POST /api/projects/{id}/tasks`: `title` required, max 120 (trimmed); optional `description` (max 2000 **[ASSUMPTION]**), `priority` (default MEDIUM), `status` (default TODO), `dueDate` (today or later), `assigneeId` (must be an existing user, else 400 `assigneeId`).
+- `PUT /api/tasks/{id}`: complete replacement; `title`, `status`, `priority` required **[ASSUMPTION: "complete" read as these three required]**; `description`, `dueDate`, `assigneeId` null clear. D04: an unchanged past `dueDate` is kept, a changed one must not be in the past.
+- `PATCH /api/tasks/{id}/status` `{status}`: all transitions allowed. `DELETE /api/tasks/{id}`: 204, no body.
+- `GET /api/projects/{id}/summary`: `{todo,inProgress,done,overdue,total}` over **all** tasks of the project (no filters). Overdue = `dueDate` before today (UTC, injected clock) and status not DONE; today is not overdue, a missing date is never overdue. The same rule sets `overdue` on each TaskDto.
+- Wrong enum values, malformed dates and non-numeric ids give 400 with the field name.
+- **Extra endpoint (not in the assignment, D02):** `GET /api/users?query=` (authenticated): query trimmed, at least 2 characters (else 400), matches **name only** (never email), case-insensitive, `%` and `_` are literal, at most 20 results, response items are only `{id,name}`. Privacy trade-off: any signed-in user can search all user names.
 
 ## Errors
 Same shape everywhere, including 401/403 produced by the security filters:

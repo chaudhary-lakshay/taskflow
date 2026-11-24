@@ -40,4 +40,12 @@
 - A duplicate email is recognised by SQLState 23505 plus the constraint name `uq_users_email` (PostgreSQL server error or Hibernate `constraintName`), never by message text; any other integrity violation is rethrown (500).
 - The password rule lives in one place (`PasswordPolicy`, used by `@ValidPassword` on registration and by the demo seeder). Login only bounds the length (72 bytes) and does not enforce the minimum.
 - The dummy hash for unknown-email logins is built when `AuthService` is constructed; every login performs exactly one `matches()`. Timing equality is not claimed: one local sample showed medians of 67.8 ms (wrong password) and 63.8 ms (unknown email), not a proof.
+## T03 decisions
+- `ProjectRepository` and `TaskRepository` are bare `Repository` interfaces: no unscoped finder exists (resolves the T02 review note). Specification queries are always built from `scoped(projectId, ownerId)`.
+- Task list: the service checks project ownership first (404), then the spec also scopes by owner. Omitted `sortBy` = dueDate. Undated tasks always last. Ties by id ascending. **[ASSUMPTION]** sort default.
+- PUT requires title, status and priority; description, dueDate, assigneeId may be null to clear. **[ASSUMPTION]**
+- Description limit 2000 characters for projects and tasks. **[ASSUMPTION]**
+- Overdue is defined once in `TaskRules.isOverdue` (DTO flag) and mirrored in the `countOverdue` query; a test asserts the summary count equals the number of overdue flags in the list.
+- Assignment accepts any existing user (D02); there is no project membership, so assigning someone grants nothing.
+- Update returns the stored `updatedAt` by flushing before mapping.
 - Demo data only under profile `demo`; the shared demo password comes from `DEMO_PASSWORD` with no default, and startup fails if it is missing. BCrypt via `spring-security-crypto` only (Spring Security itself arrives in T02).

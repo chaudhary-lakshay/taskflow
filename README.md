@@ -1,7 +1,7 @@
 # TaskFlow
 
 Task-management app (take-home): Kotlin + Spring Boot 3.5 backend, React + TypeScript frontend, PostgreSQL 17.
-Status: T02 done (backend persistence, registration, login, JWT security). Projects/tasks APIs (T03) and the React screens (T04+) are not built yet.
+Status: backend complete through T03 (persistence, auth, projects, tasks, summary). The React screens (T04+) are not built yet.
 
 ## Prerequisites
 - JDK 17+ to launch Gradle (the build downloads Java 21 itself via the Gradle toolchain resolver)
@@ -26,6 +26,9 @@ Demo data (optional): run the backend with `--args='--spring.profiles.active=dem
 - Every other endpoint needs `Authorization: Bearer <token>`. Public: register, login, `GET /actuator/health`.
 - Errors always look like `{status,code,message,fieldErrors?}`, also for 401 from the security filters.
 - Environment: `JWT_SECRET` (base64, 32+ bytes, no default), `JWT_ISSUER` (default `taskflow`), `JWT_TTL_SECONDS` (default 3600). Tokens are HS256, stateless; there is no refresh token or logout on the server.
+
+## Project and task API (T03)
+All need `Authorization: Bearer <token>` and are owner-only (someone else's project or task is a 404): `GET/POST /api/projects`, `GET/POST /api/projects/{id}/tasks` (filters `status`, `priority`, `assigneeId`; `sortBy=dueDate|priority`, `direction=asc|desc`, `page`, `size` up to 100), `PUT /api/tasks/{id}`, `PATCH /api/tasks/{id}/status`, `DELETE /api/tasks/{id}`, `GET /api/projects/{id}/summary`. Extra, beyond the assignment: `GET /api/users?query=` (assignee lookup, id and name only). Details: `docs/api-contract.md`.
 
 ## Verify
 ```bash
