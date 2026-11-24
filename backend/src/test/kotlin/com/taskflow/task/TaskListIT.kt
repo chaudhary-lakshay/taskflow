@@ -140,6 +140,30 @@ class TaskListIT : ApiIT() {
     }
 
     @Test
+    fun `combined filters with paging return each matching task once, in order, and never a non-matching one`() {
+        val p = project(a)
+        val t = today()
+        val rows = (1..60).map { i ->
+            val status = listOf("TODO", "IN_PROGRESS", "DONE")[i % 3]
+            val priority = listOf("LOW", "HIGH")[i % 2]
+            val who = if (i % 5 == 0) helper else other
+            val due = if (i % 7 == 0) null else t.plusDays((i % 3).toLong()) // many ties and some undated
+            val id = task(p, "t$i", status, priority, due, who)
+            listOf(id, status, priority, who.id, due)
+        }
+        val expected = rows.filter { it[1] == "TODO" && it[2] == "HIGH" && it[3] == other.id }
+            .sortedWith(compareBy<List<Any?>> { it[4] == null }.thenBy { it[4] as LocalDate? }.thenBy { it[0] as Long })
+            .map { it[0] as Long }
+        assertTrue(expected.size > 6, "the fixture must span several pages")
+        val pages = (0..expected.size / 4).map {
+            list(p, "status" to "TODO", "priority" to "HIGH", "assigneeId" to other.id, "sortBy" to "dueDate", "direction" to "asc", "page" to it, "size" to 4)
+        }
+        assertEquals(expected, pages.flatMap { ids(it) })
+        pages.forEach { assertEquals(expected.size, it["totalElements"].asInt()) }
+        assertEquals(0, list(p, "status" to "TODO", "priority" to "HIGH", "assigneeId" to other.id, "page" to 50)["content"].size())
+    }
+
+    @Test
     fun `page metadata and boundaries`() {
         val p = project(a)
         repeat(40) { task(p, "t$it") }

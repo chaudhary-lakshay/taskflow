@@ -50,6 +50,29 @@ class ProjectApiIT : ApiIT() {
     }
 
     @Test
+    fun `summary follows status transitions and deletes, including the overdue count`() {
+        val p = project(a)
+        val t = today()
+        val late = task(p, "late", status = "TODO", due = t.minusDays(2))
+        task(p, "open", status = "TODO", due = t.plusDays(2))
+        fun expect(todo: Int, inProgress: Int, done: Int, overdue: Int) =
+            get("/api/projects/$p/summary", a).andExpect(status().isOk)
+                .andExpect(jsonPath("$.todo").value(todo)).andExpect(jsonPath("$.inProgress").value(inProgress))
+                .andExpect(jsonPath("$.done").value(done)).andExpect(jsonPath("$.overdue").value(overdue))
+                .andExpect(jsonPath("$.total").value(todo + inProgress + done))
+        expect(2, 0, 0, 1)
+        patch("/api/tasks/$late/status", a, """{"status":"IN_PROGRESS"}""").andExpect(status().isOk)
+        expect(1, 1, 0, 1) // still open, still overdue
+        patch("/api/tasks/$late/status", a, """{"status":"DONE"}""").andExpect(status().isOk)
+        expect(1, 0, 1, 0) // done is no longer overdue
+        patch("/api/tasks/$late/status", a, """{"status":"TODO"}""").andExpect(status().isOk)
+        expect(2, 0, 0, 1) // reopened: overdue again
+        delete("/api/tasks/$late", a).andExpect(status().isNoContent)
+        expect(1, 0, 0, 0)
+        assertEquals(1, taskCount(p))
+    }
+
+    @Test
     fun `summary of an empty project is all zeros, and ignores board filters`() {
         val p = project(a)
         get("/api/projects/$p/summary", a).andExpect(jsonPath("$.total").value(0)).andExpect(jsonPath("$.overdue").value(0))
