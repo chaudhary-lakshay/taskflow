@@ -13,6 +13,12 @@ java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
+// Hibernate needs open entity classes for lazy proxies.
+allOpen {
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.MappedSuperclass")
+}
+
 kotlin {
     compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") }
 }
@@ -25,6 +31,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.springframework.security:spring-security-crypto") // BCrypt only; Spring Security itself arrives in T02
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
