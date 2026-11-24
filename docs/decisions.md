@@ -58,3 +58,4 @@
 - Login does not enforce the 8-character minimum on the client (old passwords must still work); registration does, plus the 72-byte limit.
 - The HTTP layer is configured while the provider renders, not in an effect: child effects run before a parent's, so an effect would let the first request after a reload go out without the token (found by the 401 test).
 - Dependencies pinned exactly: react-router 8.5.3 (peer react >=19.2.7, node >=22.22: installed react 19.3.1 and Node 24.14.0), @tanstack/react-query 5.108.4 (peer react ^18 || ^19). `@testing-library/react` 16.3.3 needs `@testing-library/dom` ^10, which was already installed (10.4.2). The plan listed react-router 8.5.2; 8.5.3 was current on 24 November.
+- A 401 ends the session only if the token the request was sent with is still the current session token at response time. A late 401 for an old token (logout, then login as someone else while the request was in flight) just rejects that request (T04 re-review).
