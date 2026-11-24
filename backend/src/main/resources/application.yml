@@ -12,6 +12,10 @@ spring:
   flyway:
     enabled: true
 
+taskflow:
+  demo:
+    password: ${DEMO_PASSWORD:}
+
 management:
   endpoints:
     web:
