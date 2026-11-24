@@ -20,3 +20,13 @@
 - Testcontainers 1.21.4 works with Docker Engine 29.5.3.
 - ESLint 9 + typescript-eslint with TypeScript 5.9 (create-vite ships oxlint and TS 7; typescript-eslint supports TS below 6.1).
 - Postgres is published on 127.0.0.1 only.
+
+## T01 persistence decisions
+- Flyway V1 owns the schema; Hibernate only validates (`ddl-auto: validate`).
+- Emails are stored trimmed and lower case (`User.normalizeEmail`); a CHECK constraint refuses anything else, so the plain UNIQUE index is effectively case-insensitive.
+- Enums are text columns with CHECK constraints and `@Enumerated(STRING)`; defaults TODO / MEDIUM in both DB and entity.
+- Foreign keys have no cascade: a user referenced by a project or task, or a project with tasks, cannot be deleted. No delete feature exists for either (D12).
+- Timestamps are `Instant` truncated to microseconds, matching `timestamptz`, so an entity equals what was stored. `updatedAt` moves on `@PreUpdate`.
+- Owner scope lives in repository method signatures (`findByIdAndOwnerId`, `findByIdAndProjectOwnerId`): a foreign row and a missing row both return null (D06 → 404).
+- **[ASSUMPTION]** Column limits not given by the assignment: user name 100, email 254, project name 120, password hash 100. Only task title 120 is an assignment rule.
+- Demo data only under profile `demo`; the shared demo password comes from `DEMO_PASSWORD` with no default, and startup fails if it is missing. BCrypt via `spring-security-crypto` only (Spring Security itself arrives in T02).

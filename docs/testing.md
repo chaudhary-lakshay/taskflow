@@ -23,6 +23,16 @@ cd frontend && npm ci && npm run lint && npm run typecheck && npm test -- --runI
 
 Backend XML reports are in `backend/build/test-results/test/` (gitignored). Exact commands, exit codes and commit SHAs are recorded in the Notion plan (page 05).
 
+## T01 persistence tests
+| Suite | Tests | What it proves |
+|---|---|---|
+| SchemaIT | 8 | V1 on real Postgres: defaults, unique + normalised email, title 120/blank, enum CHECKs, FKs and NOT NULL, no delete from under references, planned indexes |
+| RepositoryIT | 8 | entity mapping and enum round-trip, email normalisation, updatedAt on update, lazy relations, owner-scoped project and task queries (assignee gets no access) |
+| DemoSeedIT | 2 | demo profile seeds 2 users (BCrypt), 3 projects, varied tasks incl. overdue/unassigned/assigned-to-other; second run is a no-op |
+| DemoDataSeederTest (MockK) | 1 | no DEMO_PASSWORD → fails fast, writes nothing |
+
+All integration suites share one Testcontainers PostgreSQL 17 container (`support/PostgresIT`).
+
 ## Environment notes
 - Docker Desktop must be running for Testcontainers (verified with Docker Engine 29.5.3, Testcontainers 1.21.4).
 - Tests and bootRun run with `-Duser.timezone=UTC` (Postgres 17 rejects the JVM zone alias `Asia/Calcutta`).

@@ -17,6 +17,8 @@ cd ../frontend
 npm ci && npm run dev
 ```
 
+Demo data (optional): run the backend with `--args='--spring.profiles.active=demo'` and `DEMO_PASSWORD=<your choice>` set. It creates `alice.demo@example.test` and `bob.demo@example.test` (both use that password) with sample projects and tasks. Without `DEMO_PASSWORD` the demo profile refuses to start. Login itself arrives in T02.
+
 ## Verify
 ```bash
 scripts/verify.sh   # backend tests (Testcontainers) + frontend lint, typecheck, Jest, build
