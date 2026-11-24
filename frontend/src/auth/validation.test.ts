@@ -1,4 +1,4 @@
-import { byteLength, validateLogin, validateProject, validateRegister } from './validation'
+import { byteLength, validateLogin, validateProject, validateRegister, validateTask } from './validation'
 
 describe('validation matches the backend rules', () => {
   it('register: name max 100, valid email max 254, password 8 characters and 72 bytes', () => {
@@ -31,5 +31,24 @@ describe('validation matches the backend rules', () => {
     expect(validateProject({ name: '  ', description: '' }).name).toBeDefined()
     expect(validateProject({ name: 'x'.repeat(121), description: '' }).name).toMatch(/120/)
     expect(validateProject({ name: 'x', description: 'd'.repeat(2001) }).description).toMatch(/2000/)
+  })
+})
+
+describe('validateTask', () => {
+  const base = { title: 'T', description: '', dueDate: '', originalDueDate: null, editing: false, today: '2026-11-24' }
+  it('accepts a minimal task', () => expect(validateTask(base)).toEqual({}))
+  it('requires a title and caps it at 120', () => {
+    expect(validateTask({ ...base, title: '  ' }).title).toBe('Title is required')
+    expect(validateTask({ ...base, title: 'x'.repeat(120) }).title).toBeUndefined()
+    expect(validateTask({ ...base, title: 'x'.repeat(121) }).title).toBeDefined()
+  })
+  it('rejects a past date on create, accepts today', () => {
+    expect(validateTask({ ...base, dueDate: '2026-11-23' }).dueDate).toBeDefined()
+    expect(validateTask({ ...base, dueDate: '2026-11-24' }).dueDate).toBeUndefined()
+  })
+  it('on edit keeps an unchanged past date but rejects a changed one', () => {
+    const e = { ...base, editing: true, originalDueDate: '2026-01-01' }
+    expect(validateTask({ ...e, dueDate: '2026-01-01' })).toEqual({})
+    expect(validateTask({ ...e, dueDate: '2026-01-02' }).dueDate).toBeDefined()
   })
 })
