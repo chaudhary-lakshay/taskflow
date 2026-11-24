@@ -37,5 +37,5 @@ class UserLookupService(private val users: UserRepository) {
 @RestController
 class UserLookupController(private val lookup: UserLookupService) {
     @GetMapping("/api/users")
-    fun search(@AuthenticationPrincipal jwt: Jwt, @RequestParam query: String): List<UserOption> = lookup.search(query)
+    fun search(@AuthenticationPrincipal jwt: Jwt, @RequestParam(defaultValue = "") query: String): List<UserOption> = lookup.search(query)
 }

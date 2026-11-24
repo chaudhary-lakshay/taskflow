@@ -91,7 +91,8 @@ class ProjectApiIT : ApiIT() {
     fun `user lookup needs at least 2 characters, returns at most 20, and treats wildcards literally`() {
         get("/api/users", a, "query" to "a").andExpect(status().isBadRequest).andExpect(jsonPath("$.fieldErrors.query").exists())
         get("/api/users", a, "query" to " a ").andExpect(status().isBadRequest)
-        get("/api/users", a).andExpect(status().isBadRequest)
+        get("/api/users", a).andExpect(status().isBadRequest).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.fieldErrors.query").exists())
         val tag = "Many" + UUID.randomUUID().toString().take(6)
         repeat(25) { person("$tag-$it") }
         get("/api/users", a, "query" to tag).andExpect(status().isOk).andExpect(jsonPath("$.length()").value(20))
