@@ -45,6 +45,18 @@ describe('http wrapper', () => {
     expect(onUnauthorized).toHaveBeenCalledTimes(1)
   })
 
+  it('a late 401 for an old token does not end a newer session', async () => {
+    let current: string | null = 'token-A'
+    configureHttp({ getToken: () => current, onUnauthorized })
+    let answer!: (r: unknown) => void
+    fetchMock.mockReturnValue(new Promise((r) => (answer = r)))
+    const pending = request('GET', '/projects') // sent with token A
+    current = 'token-B' // logout, then login as someone else
+    answer(await reply(401, { status: 401, code: 'UNAUTHORIZED', message: 'x' }))
+    await expect(pending).rejects.toMatchObject({ status: 401 }) // that request still fails...
+    expect(onUnauthorized).not.toHaveBeenCalled() // ...but the session B stays
+  })
+
   it('a 401 without a token (wrong password at login) is just an error', async () => {
     configureHttp({ getToken: () => null, onUnauthorized })
     fetchMock.mockReturnValue(reply(401, { status: 401, code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' }))

@@ -48,9 +48,11 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   }
 
   const error = await toApiError(response)
-  // A 401 on a request that sent a token means the session is no longer valid.
-  // A 401 without a token (wrong password at login) is just an error for the form.
-  if (response.status === 401 && token) config.onUnauthorized()
+  // A 401 on a request that sent a token means that session is no longer valid.
+  // - A 401 without a token (wrong password at login) is just an error for the form.
+  // - A late 401 for an old token (the user logged out and signed in again while the request was
+  //   in flight) must not end the newer session: only act if the token is still the current one.
+  if (response.status === 401 && token && config.getToken() === token) config.onUnauthorized()
   throw error
 }
 
