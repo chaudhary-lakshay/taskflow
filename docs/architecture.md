@@ -30,4 +30,15 @@ pages → hooks (useProjects, useCreateProject: TanStack Query) → api/projects
 - Query keys: `['user', userId, 'projects']`.
 - Reusable components: `Button`, `FormField` (label, aria-invalid, aria-describedby, role=alert errors), `Modal` (focus moves in, Tab wraps, Escape closes, focus returns to the opener), `AppHeader`.
 - Client validation mirrors the backend (`auth/validation.ts`); the server stays the authority and its `fieldErrors` are shown next to the fields.
+
+### Board (T05)
+```
+ProjectPage → SummaryBar / FilterBar / BoardColumn ×3 (TODO, IN_PROGRESS, DONE) → TaskCard
+BoardColumn → useColumnTasks → api/tasks.listTasks (GET /projects/{id}/tasks?status=…&sortBy=dueDate&direction=…&page=…&size=10)
+SummaryBar → useSummary → api/tasks.getSummary;  TaskFormModal / DeleteTaskModal / card status → useCreateTask, useUpdateTask, useDeleteTask, useChangeStatus
+```
+- Query keys: `['user', uid, 'project', pid, 'summary']`, `['user', uid, 'project', pid, 'tasks', status, priority, assigneeId, direction, page]`, `['user', uid, 'users', term]` (assignee lookup).
+- Every successful mutation invalidates the whole `['user', uid, 'project', pid]` prefix: all three columns and the summary. That is a superset of the affected columns, chosen over tracking which ones changed.
+- Filters live in the URL (`features/board/filters.ts`); each column is keyed by the filter values, so its page restarts at 0 when a filter changes.
+- Overdue is computed on the card from `dueDate`, `status` and the UTC date, mirroring the backend rule (`features/board/dates.ts`).
 - The backend has no single-project endpoint, so `/projects/:id` finds the project in the cached list.

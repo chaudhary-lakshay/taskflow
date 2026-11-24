@@ -31,13 +31,16 @@ Demo data (optional): run the backend with `--args='--spring.profiles.active=dem
 All need `Authorization: Bearer <token>` and are owner-only (someone else's project or task is a 404): `GET/POST /api/projects`, `GET/POST /api/projects/{id}/tasks` (filters `status`, `priority`, `assigneeId`; `sortBy=dueDate|priority`, `direction=asc|desc`, `page`, `size` up to 100), `PUT /api/tasks/{id}`, `PATCH /api/tasks/{id}/status`, `DELETE /api/tasks/{id}`, `GET /api/projects/{id}/summary`. Extra, beyond the assignment: `GET /api/users?query=` (assignee lookup, id and name only). Details: `docs/api-contract.md`.
 
 ## Frontend (T04)
-React 19 + TypeScript + Vite, React Router, TanStack Query, plain CSS (no UI framework). Routes: `/login`, `/register`, `/projects`, `/projects/:id` (a placeholder until the board in T05); `/` redirects to `/projects`; logged-out visitors are sent to `/login` and come back to where they were headed.
+React 19 + TypeScript + Vite, React Router, TanStack Query, plain CSS (no UI framework). Routes: `/login`, `/register`, `/projects`, `/projects/:id` (the project board, T05); `/` redirects to `/projects`; logged-out visitors are sent to `/login` and come back to where they were headed.
 
 **State management choice.** *Server state* (the project list) lives in **TanStack Query**: caching, loading and error states and refetch after a mutation come for free, and query keys start with the user id so one user's data is never shown to another. *Session state* (who is signed in, the token) is small, global and changes rarely, so a plain **React Context** (`AuthContext`) is enough; no Redux. Form fields and modal state stay local to their components. The session is cleared, together with the whole query cache, on logout and on any 401.
 
 **Where the token lives (D09).** `sessionStorage`, so a reload in the same tab keeps you signed in and closing the tab does not. Trade-off: JavaScript on the page can read it, so an XSS bug would expose it; there is no refresh token or cookie. All HTTP goes through one wrapper (`src/api/http.ts`) that adds the bearer header and turns errors into the backend error shape; components never call `fetch`. The browser only talks to its own origin (Vite proxies `/api`), and no secret is in any `VITE_` variable.
 
 Tests: Jest 30 + React Testing Library + user-event. `react-router` ships ES modules only, so `jest.config.cjs` lets Babel transform it, and a tiny Babel plugin replaces `import.meta` (Jest only).
+
+### Project board (T05)
+`/projects/:id` shows a summary bar (To Do, In Progress, Done, Overdue, Total; it ignores the filters), a filter bar (priority, assignee, sort by due date) and three columns, one query each. Each column shows 10 tasks per page with Previous/Next, so no task is hidden. Filters are kept in the URL (`?priority=HIGH&assignee=5&assigneeName=Bob&dir=desc`), so a reload or a shared link keeps them. A task card shows title, priority, due date and assignee; an open task due before today (UTC) gets an "Overdue" label. The status dropdown on a card changes the status at once; if the server refuses, the card keeps its old status and shows the error with Retry. Create and edit use one form in the modal (assignee chosen by name search, can be cleared); delete asks first.
 
 ## Verify
 ```bash

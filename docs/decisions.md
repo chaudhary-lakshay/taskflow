@@ -59,3 +59,12 @@
 - The HTTP layer is configured while the provider renders, not in an effect: child effects run before a parent's, so an effect would let the first request after a reload go out without the token (found by the 401 test).
 - Dependencies pinned exactly: react-router 8.5.3 (peer react >=19.2.7, node >=22.22: installed react 19.3.1 and Node 24.14.0), @tanstack/react-query 5.108.4 (peer react ^18 || ^19). `@testing-library/react` 16.3.3 needs `@testing-library/dom` ^10, which was already installed (10.4.2). The plan listed react-router 8.5.2; 8.5.3 was current on 24 November.
 - A 401 ends the session only if the token the request was sent with is still the current session token at response time. A late 401 for an old token (logout, then login as someone else while the request was in flight) just rejects that request (T04 re-review).
+
+## T05 board decisions
+- **Paging:** Previous/Next per column, 10 tasks per page, rather than load-more: every task stays reachable and the page can be read from the response. Filters and sort are shared by the three columns and kept in the URL.
+- **Invalidation:** every mutation refetches all columns and the summary of the project (a superset of "the affected columns"; the cost is two extra small requests).
+- **Overdue:** computed on the client from dueDate, status and the UTC date, not read from `task.overdue`, so a card is right even before a refetch. "Today" is UTC to match the backend day.
+- **Assignee:** the backend has no member list, so the filter and the form use the same name search (`GET /api/users?query=`, at least 2 characters, debounced 250 ms). The chosen name is kept in the URL (`assigneeName`) to show it after a reload.
+- **Form:** create has no Status field (new tasks are To Do); edit has Status because PUT needs title, status and priority. A past due date is refused on create; on edit an unchanged past date is accepted (D04).
+- **Status change on failure:** the card keeps the status the server last returned, shows the message and a Retry that resends the wanted status.
+- No backend change was needed.
