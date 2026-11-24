@@ -30,10 +30,10 @@ class RepositoryIT : PostgresIT() {
     private fun user(name: String = "N", email: String = "${UUID.randomUUID()}@example.test") =
         users.saveAndFlush(User(name, email, "hash"))
 
-    private fun project(owner: User, name: String = "P") = projects.saveAndFlush(Project(name, null, owner))
+    private fun project(owner: User, name: String = "P") = projects.save(Project(name, null, owner)).also { em.flush() }
 
     private fun task(project: Project, title: String = "T", assignee: User? = null) =
-        tasks.saveAndFlush(Task(title = title, project = project, assignee = assignee))
+        tasks.save(Task(title = title, project = project, assignee = assignee)).also { em.flush() }
 
     private fun reload() = em.clear()
 
@@ -51,17 +51,15 @@ class RepositoryIT : PostgresIT() {
     @Test
     fun `task gets defaults, ids and timestamps, and enums round-trip as strings`() {
         val p = project(user())
-        val t = tasks.saveAndFlush(
-            Task("Ship", "desc", TaskStatus.IN_PROGRESS, TaskPriority.HIGH, LocalDate.of(2030, 1, 31), null, p),
-        )
+        val t = tasks.save(Task("Ship", "desc", TaskStatus.IN_PROGRESS, TaskPriority.HIGH, LocalDate.of(2030, 1, 31), null, p)).also { em.flush() }
         val plain = task(p)
         reload()
-        val loaded = tasks.findById(t.id!!).get()
+        val loaded = em.find(Task::class.java, t.id!!)!!
         assertEquals(TaskStatus.IN_PROGRESS, loaded.status)
         assertEquals(TaskPriority.HIGH, loaded.priority)
         assertEquals(LocalDate.of(2030, 1, 31), loaded.dueDate)
         assertNotNull(loaded.createdAt)
-        val defaults = tasks.findById(plain.id!!).get()
+        val defaults = em.find(Task::class.java, plain.id!!)!!
         assertEquals(TaskStatus.TODO, defaults.status)
         assertEquals(TaskPriority.MEDIUM, defaults.priority)
         assertNull(defaults.dueDate)
@@ -75,9 +73,10 @@ class RepositoryIT : PostgresIT() {
         val firstUpdate = t.updatedAt
         Thread.sleep(5)
         t.status = TaskStatus.DONE
-        tasks.saveAndFlush(t)
+        tasks.save(t)
+        em.flush()
         reload()
-        val loaded = tasks.findById(t.id!!).get()
+        val loaded = em.find(Task::class.java, t.id!!)!!
         assertEquals(created, loaded.createdAt)
         assertEquals(true, loaded.updatedAt.isAfter(firstUpdate))
     }
@@ -88,7 +87,7 @@ class RepositoryIT : PostgresIT() {
         val helper = user("Helper")
         val t = task(project(owner), assignee = helper)
         reload()
-        val loaded = tasks.findById(t.id!!).get()
+        val loaded = em.find(Task::class.java, t.id!!)!!
         assertEquals("Helper", loaded.assignee!!.name)
         assertEquals(owner.id, loaded.project.owner.id)
     }

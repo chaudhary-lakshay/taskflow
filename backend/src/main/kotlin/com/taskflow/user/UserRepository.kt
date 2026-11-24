@@ -7,4 +7,7 @@ interface UserRepository : JpaRepository<User, Long> {
     fun findByEmail(email: String): User?
 
     fun existsByEmail(email: String): Boolean
+
+    /** Directory search by name only (never email); wildcards in [name] are escaped by Spring Data. */
+    fun findByNameContainingIgnoreCase(name: String, pageable: org.springframework.data.domain.Pageable): List<User>
 }

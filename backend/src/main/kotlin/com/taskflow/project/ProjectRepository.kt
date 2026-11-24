@@ -1,8 +1,14 @@
 package com.taskflow.project
 
-import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.repository.Repository
 
-interface ProjectRepository : JpaRepository<Project, Long> {
+/**
+ * Deliberately NOT a JpaRepository: findById, findAll, deleteById, getReferenceById... are not
+ * available, so a service cannot reach a project without naming its owner.
+ */
+interface ProjectRepository : Repository<Project, Long> {
+    fun <S : Project> save(project: S): S
+
     fun findAllByOwnerIdOrderById(ownerId: Long): List<Project>
 
     /** Null when the project does not exist or belongs to someone else (callers answer 404 for both). */

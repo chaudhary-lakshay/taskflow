@@ -2,6 +2,7 @@ package com.taskflow.common
 
 import com.taskflow.auth.DuplicateEmailException
 import com.taskflow.auth.InvalidCredentialsException
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -11,6 +12,7 @@ import org.springframework.web.ErrorResponse
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -27,8 +29,26 @@ class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun unreadable(e: HttpMessageNotReadableException) =
-        reply(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Request body is missing or malformed")
+    fun unreadable(e: HttpMessageNotReadableException): ResponseEntity<ApiError> {
+        // A well-formed body with a wrong value for one field (bad enum, bad date) is a field error.
+        val field = (e.cause as? MismatchedInputException)?.path?.lastOrNull()?.fieldName
+        return if (field != null) {
+            reply(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid request", mapOf(field to "Invalid value"))
+        } else {
+            reply(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "Request body is missing or malformed")
+        }
+    }
+
+    @ExceptionHandler(RequestValidationException::class)
+    fun validation(e: RequestValidationException) =
+        reply(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid request", e.fieldErrors)
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun badParameter(e: MethodArgumentTypeMismatchException) =
+        reply(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Invalid request", mapOf(e.name to "Invalid value"))
+
+    @ExceptionHandler(NotFoundException::class)
+    fun notFound(e: NotFoundException) = reply(HttpStatus.NOT_FOUND, "NOT_FOUND", "Resource not found")
 
     @ExceptionHandler(DuplicateEmailException::class)
     fun duplicateEmail(e: DuplicateEmailException) =

@@ -26,6 +26,7 @@ class DemoSeedIT : PostgresIT() {
     @Autowired lateinit var tasks: TaskRepository
     @Autowired lateinit var encoder: PasswordEncoder
     @Autowired lateinit var seeder: DemoDataSeeder
+    @Autowired lateinit var jdbc: org.springframework.jdbc.core.JdbcTemplate
 
     @Test
     fun `seeds two demo users with hashed passwords, owned projects and varied tasks`() {
@@ -52,8 +53,9 @@ class DemoSeedIT : PostgresIT() {
 
     @Test
     fun `running the seeder again changes nothing`() {
-        val before = users.count() + projects.count() + tasks.count()
+        val count = { jdbc.queryForObject("select (select count(*) from users) + (select count(*) from projects) + (select count(*) from tasks)", Long::class.java) }
+        val before = count()
         seeder.run(null)
-        assertEquals(before, users.count() + projects.count() + tasks.count())
+        assertEquals(before, count())
     }
 }
