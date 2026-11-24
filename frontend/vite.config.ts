@@ -4,4 +4,8 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    // The browser only talks to this origin; /api is forwarded to the backend, so no CORS is needed.
+    proxy: { '/api': 'http://localhost:8080' },
+  },
 })
