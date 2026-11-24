@@ -29,4 +29,12 @@
 - Timestamps are `Instant` truncated to microseconds, matching `timestamptz`, so an entity equals what was stored. `updatedAt` moves on `@PreUpdate`.
 - Owner scope lives in repository method signatures (`findByIdAndOwnerId`, `findByIdAndProjectOwnerId`): a foreign row and a missing row both return null (D06 → 404).
 - **[ASSUMPTION]** Column limits not given by the assignment: user name 100, email 254, project name 120, password hash 100. Only task title 120 is an assignment rule.
+## T02 auth decisions
+- Password policy: 8 characters minimum, 72 UTF-8 bytes maximum (BCrypt reads only 72 bytes; we reject instead of truncating). No composition rules. **[ASSUMPTION]** the assignment gives no password policy.
+- Login does not reveal whether an email exists: same 401 body, and a dummy BCrypt comparison runs for unknown emails.
+- JWT: HS256 symmetric secret from the environment; TTL 3600 s (plan says 30–60 min, so at the top of that range); 30 s clock skew; no refresh token, no server-side logout (D09 trade-off).
+- Spring Security's library validators accept a missing `exp`, so a small validator additionally requires `exp` and a positive numeric `sub`.
+- Register returns the user (201) and does not log in; the frontend logs in afterwards (page 03). **[ASSUMPTION]**
+- `GET /actuator/health` is the only public non-auth endpoint; it exposes status only.
+- No inherited unscoped repository methods are used for user-owned resources: T03 services must call the owner-scoped finders from T01 (`findByIdAndOwnerId`, `findByIdAndProjectOwnerId`). Note `JpaRepository.findById/findAll/deleteById` on Project and Task remain callable and must not be used by services.
 - Demo data only under profile `demo`; the shared demo password comes from `DEMO_PASSWORD` with no default, and startup fails if it is missing. BCrypt via `spring-security-crypto` only (Spring Security itself arrives in T02).

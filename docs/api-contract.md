@@ -1,6 +1,6 @@
 # API contract
 
-JSON, camelCase, ISO dates, numeric ids, `Authorization: Bearer <jwt>`. Status: **proposal**, confirmed in OpenAPI when implemented (T02/T03). Nothing below is implemented yet.
+JSON, camelCase, ISO dates, numeric ids, `Authorization: Bearer <jwt>`. Status: **proposal**, confirmed in OpenAPI when implemented. Implemented so far (T02): `POST /api/auth/register` and `POST /api/auth/login`, the error shape, and bearer-token protection of everything else. The remaining endpoints arrive in T03.
 
 | Method | Path | Request / query | Success |
 |---|---|---|---|
@@ -31,9 +31,16 @@ The first ten rows are the assignment's required endpoints.
 - Sorting: priority rank HIGH > MEDIUM > LOW (not alphabetical); null dates last; id as tie breaker. Default direction asc for date, desc for priority. Unsupported sort values give 400.
 - Overdue: dueDate before today (UTC) and status != DONE; null date is never overdue.
 
+## Auth behaviour (implemented, T02)
+- Register: `name` max 100, `email` valid and max 254, `password` 8 characters minimum and 72 UTF-8 bytes maximum. Email stored trimmed and lower case; duplicates (any letter case) give 409 `EMAIL_TAKEN` with `fieldErrors.email`. Response is `{id,name,email}`; the password and its hash never appear in any response.
+- Login: email is normalised the same way; unknown email and wrong password both return 401 `INVALID_CREDENTIALS` with identical bodies.
+- Token: HS256 JWT, claims `iss`, `sub` (numeric user id), `iat`, `exp` (default 3600 s). The resource server checks signature, algorithm (HS256 only), expiry (30 s skew), issuer and a positive numeric subject; `exp` is required.
+- Public endpoints: register, login, `GET /actuator/health` (infrastructure exception). Everything else, including unknown paths, returns 401 without a valid token.
+- Owner id is taken from the JWT subject only (`Jwt.userId()`); no request field can set it.
+
 ## Errors
 Same shape everywhere, including 401/403 produced by the security filters:
 ```json
 {"status":400,"code":"VALIDATION_ERROR","message":"Invalid request","fieldErrors":{"title":"Title is required"}}
 ```
-400 invalid input; 401 bad credentials or token; 404 missing or foreign resource; 409 duplicate email **[ASSUMPTION: proposed contract]**; 500 generic message plus correlation id, no stack trace.
+Codes in use: `VALIDATION_ERROR` (400, with `fieldErrors`), `MALFORMED_REQUEST` (400), `UNAUTHORIZED` / `INVALID_CREDENTIALS` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `EMAIL_TAKEN` (409, **[ASSUMPTION: proposed contract]**), `INTERNAL_ERROR` (500, generic message plus `correlationId`, stack trace only in the server log).

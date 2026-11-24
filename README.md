@@ -1,7 +1,7 @@
 # TaskFlow
 
 Task-management app (take-home): Kotlin + Spring Boot 3.5 backend, React + TypeScript frontend, PostgreSQL 17.
-Status: T00 baseline only, no features yet.
+Status: T02 done (backend persistence, registration, login, JWT security). Projects/tasks APIs (T03) and the React screens (T04+) are not built yet.
 
 ## Prerequisites
 - JDK 17+ to launch Gradle (the build downloads Java 21 itself via the Gradle toolchain resolver)
@@ -10,14 +10,22 @@ Status: T00 baseline only, no features yet.
 ## Run locally
 ```bash
 cp .env.example .env            # set POSTGRES_PASSWORD and DB_PASSWORD to the same local value
+openssl rand -base64 32         # put the output in JWT_SECRET (required, the backend refuses to start without it)
 docker compose up -d db
 cd backend
-DB_PASSWORD=<same value> ./gradlew bootRun   # Windows: gradlew.bat; health: http://localhost:8080/actuator/health
+DB_PASSWORD=<same value> JWT_SECRET=<generated value> ./gradlew bootRun   # Windows: gradlew.bat; health: http://localhost:8080/actuator/health
 cd ../frontend
 npm ci && npm run dev
 ```
 
-Demo data (optional): run the backend with `--args='--spring.profiles.active=demo'` and `DEMO_PASSWORD=<your choice>` set. It creates `alice.demo@example.test` and `bob.demo@example.test` (both use that password) with sample projects and tasks. Without `DEMO_PASSWORD` the demo profile refuses to start. Login itself arrives in T02.
+Demo data (optional): run the backend with `--args='--spring.profiles.active=demo'` and `DEMO_PASSWORD=<your choice>` set. It creates `alice.demo@example.test` and `bob.demo@example.test` (both use that password) with sample projects and tasks. Without `DEMO_PASSWORD` the demo profile refuses to start. You can then log in with `POST /api/auth/login`.
+
+## Auth API (T02)
+- `POST /api/auth/register` `{name,email,password}` → 201 `{id,name,email}`. Email is trimmed and lower-cased and must be unique (409 `EMAIL_TAKEN`). Password: 8+ characters, at most 72 UTF-8 bytes (BCrypt limit; longer is rejected, not truncated).
+- `POST /api/auth/login` `{email,password}` → 200 `{accessToken,tokenType:"Bearer",expiresIn,user}`; wrong password and unknown email give the same 401.
+- Every other endpoint needs `Authorization: Bearer <token>`. Public: register, login, `GET /actuator/health`.
+- Errors always look like `{status,code,message,fieldErrors?}`, also for 401 from the security filters.
+- Environment: `JWT_SECRET` (base64, 32+ bytes, no default), `JWT_ISSUER` (default `taskflow`), `JWT_TTL_SECONDS` (default 3600). Tokens are HS256, stateless; there is no refresh token or logout on the server.
 
 ## Verify
 ```bash
