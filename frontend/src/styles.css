@@ -21,6 +21,7 @@ a { color: var(--accent); }
 .header-user { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
 .header-user span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+.page-wide { max-width: 80rem; }
 .page { max-width: 56rem; margin: 0 auto; padding: 1rem; }
 .page-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .page-title h1 { margin: 0; }
@@ -57,4 +58,47 @@ a { color: var(--accent); }
 }
 @media (min-width: 64rem) {
   .project-list { grid-template-columns: repeat(3, 1fr); }
+}
+
+.field select { font: inherit; padding: 0.6rem 0.7rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; width: 100%; }
+.field .label { font-weight: 600; }
+.picked { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.picker-results { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; max-height: 10rem; overflow: auto; }
+.picker-results button { width: 100%; text-align: left; font: inherit; padding: 0.6rem 0.7rem; border: 0; background: none; cursor: pointer; min-height: 2.5rem; }
+.picker-results button:hover { background: #eef3fd; }
+
+.summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin: 0 0 1rem; }
+.stat { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem 0.75rem; }
+.stat dt { font-size: 0.8rem; color: var(--muted); }
+.stat dd { margin: 0; font-size: 1.4rem; font-weight: 700; }
+.stat-overdue { border-color: var(--danger); }
+.stat-overdue dd { color: var(--danger); }
+
+.filters { display: grid; grid-template-columns: 1fr; gap: 0 1rem; align-items: start; margin-bottom: 0.5rem; }
+
+.board { display: grid; grid-template-columns: 1fr; gap: 1rem; align-items: start; }
+.column { background: #eceff4; border-radius: 10px; padding: 0.75rem; min-width: 0; }
+.column h2 { font-size: 1.05rem; margin: 0 0 0.75rem; }
+.count { color: var(--muted); font-weight: 400; }
+.task-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.task-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem; overflow-wrap: anywhere; }
+.task-card h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.task-card.overdue { border-left: 5px solid var(--danger); }
+.task-meta { margin: 0 0 0.3rem; font-size: 0.9rem; color: var(--muted); display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.badge { border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.8rem; border: 1px solid var(--line); background: #fff; color: var(--fg); }
+.badge-high { border-color: #b3261e; }
+.badge-low { border-color: #6b7a90; }
+.badge-overdue { background: var(--danger); color: #fff; border-color: var(--danger); font-weight: 700; }
+.task-status { margin: 0.4rem 0; }
+.task-status label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; }
+.task-status select { font: inherit; padding: 0.5rem; min-height: 2.5rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.task-actions { display: flex; gap: 0.5rem; }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.75rem; }
+
+@media (min-width: 40rem) {
+  .summary { grid-template-columns: repeat(5, 1fr); }
+  .filters { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 64rem) {
+  .board { grid-template-columns: repeat(3, 1fr); }
 }

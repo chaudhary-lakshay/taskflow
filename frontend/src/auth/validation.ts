@@ -45,3 +45,14 @@ export function validateProject(v: { name: string; description: string }): Field
   if (v.description.length > 2000) errors.description = 'Description must be at most 2000 characters'
   return errors
 }
+
+export function validateTask(v: { title: string; description: string; dueDate: string; originalDueDate: string | null; editing: boolean; today: string }): FieldErrors {
+  const errors: FieldErrors = {}
+  if (!v.title.trim()) errors.title = 'Title is required'
+  else if (v.title.trim().length > 120) errors.title = 'Title must be at most 120 characters'
+  if (v.description.length > 2000) errors.description = 'Description must be at most 2000 characters'
+  // D04: a new task needs today or later; an edit may keep its (past) date but not change it to a past one
+  const keepsOldDate = v.editing && v.dueDate === (v.originalDueDate ?? '')
+  if (v.dueDate && v.dueDate < v.today && !keepsOldDate) errors.dueDate = 'Due date must not be in the past'
+  return errors
+}
