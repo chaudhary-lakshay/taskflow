@@ -1,10 +1,13 @@
+# One command: docker compose up --build   (needs .env, see .env.example)
+# Browser: http://localhost:${FRONTEND_PORT:-8081}  (nginx; /api is forwarded to the backend, which is not published)
 services:
   db:
-    image: postgres:17
+    image: postgres:17.12
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-taskflow}
       POSTGRES_USER: ${POSTGRES_USER:-taskflow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    # published on localhost only, for `./gradlew bootRun` during development; the containers use the compose network
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -14,6 +17,38 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-taskflow}
+      DB_USER: ${POSTGRES_USER:-taskflow}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (openssl rand -base64 32)}
+      JWT_ISSUER: ${JWT_ISSUER:-taskflow}
+      JWT_TTL_SECONDS: ${JWT_TTL_SECONDS:-3600}
+      # demo seed data: set SPRING_PROFILES_ACTIVE=demo and DEMO_PASSWORD in .env (both empty = no demo data)
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"status\":\"UP\"' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8081}:80"
+    restart: unless-stopped
 
 volumes:
   taskflow-db:
