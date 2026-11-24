@@ -37,4 +37,7 @@
 - Register returns the user (201) and does not log in; the frontend logs in afterwards (page 03). **[ASSUMPTION]**
 - `GET /actuator/health` is the only public non-auth endpoint; it exposes status only.
 - No inherited unscoped repository methods are used for user-owned resources: T03 services must call the owner-scoped finders from T01 (`findByIdAndOwnerId`, `findByIdAndProjectOwnerId`). Note `JpaRepository.findById/findAll/deleteById` on Project and Task remain callable and must not be used by services.
+- A duplicate email is recognised by SQLState 23505 plus the constraint name `uq_users_email` (PostgreSQL server error or Hibernate `constraintName`), never by message text; any other integrity violation is rethrown (500).
+- The password rule lives in one place (`PasswordPolicy`, used by `@ValidPassword` on registration and by the demo seeder). Login only bounds the length (72 bytes) and does not enforce the minimum.
+- The dummy hash for unknown-email logins is built when `AuthService` is constructed; every login performs exactly one `matches()`. Timing equality is not claimed: one local sample showed medians of 67.8 ms (wrong password) and 63.8 ms (unknown email), not a proof.
 - Demo data only under profile `demo`; the shared demo password comes from `DEMO_PASSWORD` with no default, and startup fails if it is missing. BCrypt via `spring-security-crypto` only (Spring Security itself arrives in T02).
