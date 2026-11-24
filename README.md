@@ -13,7 +13,7 @@ docker compose up --build            # first build takes a few minutes
 ```
 Open **http://localhost:8081** (change with `FRONTEND_PORT`) and register. `docker compose up` stops with a clear message if `JWT_SECRET` or `POSTGRES_PASSWORD` is empty. Start order is enforced: the database must be healthy, then the backend (`/actuator/health`), then the frontend. Stop with `docker compose down` (the data stays in the `taskflow-db` volume; `down -v` would delete it).
 
-Only the frontend (nginx) is published, on `127.0.0.1`. It serves the React build and forwards `/api` to the backend, so the browser talks to one origin and no CORS setup is needed. The backend has no host port. The database is published on `127.0.0.1:5432` for development only; remove that line from `compose.yaml` if you do not run the backend outside Docker.
+Only the frontend is published, on `127.0.0.1`. It is unprivileged nginx (image `nginxinc/nginx-unprivileged`, runs as the non-root user `nginx`, listens on 8080 inside the container) and serves the React build and forwards `/api` to the backend, so the browser talks to one origin and no CORS setup is needed. The backend has no host port. The database is published on `127.0.0.1:5432` for development only; remove that line from `compose.yaml` if you do not run the backend outside Docker.
 
 ### Demo login (demo data only)
 To get sample data, set both in `.env` before `docker compose up`: `SPRING_PROFILES_ACTIVE=demo` and `DEMO_PASSWORD=<a password you choose, 8+ characters>`. This creates two **demo-only** users, `alice.demo@example.test` and `bob.demo@example.test` (both use your `DEMO_PASSWORD`), with sample projects and tasks: all three statuses, an overdue task and an unassigned task. The seeder does nothing if those users already exist, so on an old database use a fresh volume. No password is stored in the repository; without `DEMO_PASSWORD` the demo profile refuses to start.
@@ -75,7 +75,7 @@ Diagrams (system, layers, data model, frontend data flow, status change) are in 
 ### Design patterns
 | Pattern | Where | Why |
 |---|---|---|
-| Repository | Spring Data repositories (`ProjectRepository`, `TaskRepository`, `UserRepository`); `RepositoryGuardTest` keeps their surface closed | no way to load a project or task without naming its owner |
+| Repository | Spring Data repositories. `ProjectRepository` and `TaskRepository` are the guarded ones: `RepositoryGuardTest` keeps their surface closed. `UserRepository` is separate and not owner-scoped: email lookup for registration and login, and a name-only directory search (id and name) for the assignee lookup | no way to load a project or task without naming its owner |
 | Specification | `task/TaskSpecifications.kt`, composed in `TaskPageQuery` | optional filters (status, priority, assignee) on top of a mandatory project + owner scope |
 | Strategy | `task/TaskSortStrategy.kt` (`DueDateSort`, `PrioritySort`) | each sort is one rule; priority sorts by rank HIGH > MEDIUM > LOW, undated tasks last, id as final tie-break so pages never repeat or skip |
 | DTO mapping | `from(...)` factories in `*Dtos.kt` | the API shape is separate from the entities |

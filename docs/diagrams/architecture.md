@@ -26,7 +26,7 @@ flowchart TB
 erDiagram
   USERS ||--o{ PROJECTS : owns
   PROJECTS ||--o{ TASKS : contains
-  USERS ||--o{ TASKS : "assigned (optional)"
+  USERS |o--o{ TASKS : "assigned (optional)"
   USERS { bigint id PK
     string name
     string email UK
