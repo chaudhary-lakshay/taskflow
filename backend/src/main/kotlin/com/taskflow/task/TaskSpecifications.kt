@@ -22,12 +22,4 @@ object TaskSpecifications {
 
     fun assignedTo(userId: Long) =
         Specification<Task> { root, _, cb -> cb.equal(root.get<User>("assignee").get<Long>("id"), userId) }
-
-    /** Sets the ORDER BY on the data query only (the count query for paging must stay unordered). */
-    fun sortedBy(field: TaskSortField, ascending: Boolean) = Specification<Task> { root, query, cb ->
-        if (query != null && query.resultType != Long::class.javaObjectType) {
-            query.orderBy(field.strategy.orders(root, cb, ascending))
-        }
-        null
-    }
 }

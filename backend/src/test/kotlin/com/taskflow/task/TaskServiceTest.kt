@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.domain.Specification
 
 /** Service rules with a fixed clock: today is 2026-11-24 (UTC). */
 class TaskServiceTest {
@@ -209,13 +207,13 @@ class TaskServiceTest {
     fun `list of a foreign project is NotFound and never queries tasks`() {
         every { projects.findByIdAndOwnerId(10L, 2L) } returns null
         assertThrows<NotFoundException> { service.list(10L, 2L, query) }
-        verify(exactly = 0) { tasks.findAll(any<Specification<Task>>(), any<Pageable>()) }
+        verify(exactly = 0) { tasks.findPage(any(), any(), any()) }
     }
 
     @Test
     fun `list maps a page of tasks to DTOs with paging metadata`() {
         every { projects.findByIdAndOwnerId(10L, 1L) } returns project
-        every { tasks.findAll(any<Specification<Task>>(), any<Pageable>()) } returns
+        every { tasks.findPage(1L, 10L, query) } returns
             PageImpl(listOf(task(due = today.minusDays(1))), org.springframework.data.domain.PageRequest.of(0, 20), 41)
         val page = service.list(10L, 1L, query)
         assertEquals(1, page.content.size)

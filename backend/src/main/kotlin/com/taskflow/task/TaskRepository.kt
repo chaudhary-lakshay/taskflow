@@ -1,10 +1,5 @@
 package com.taskflow.task
 
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.jpa.domain.Specification
-import org.springframework.data.jpa.repository.EntityGraph
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.Repository
 import org.springframework.data.repository.query.Param
@@ -16,11 +11,11 @@ interface StatusCount {
 }
 
 /**
- * Deliberately NOT a JpaRepository (see ProjectRepository). Every read and write of a task goes
- * through a query that names the owning user; list filters are composed as Specifications that
- * always start from TaskSpecifications.scoped(projectId, ownerId).
+ * Deliberately NOT a JpaRepository and NOT a JpaSpecificationExecutor: no method here can reach a
+ * task without naming its owner. The filtered list is [TaskPageQuery.findPage], whose implementation
+ * always ANDs the owner and project predicates itself. RepositoryGuardTest keeps this surface closed.
  */
-interface TaskRepository : Repository<Task, Long>, JpaSpecificationExecutor<Task> {
+interface TaskRepository : Repository<Task, Long>, TaskPageQuery {
     fun <S : Task> save(task: S): S
 
     fun <S : Task> saveAll(tasks: Iterable<S>): List<S>
@@ -33,9 +28,6 @@ interface TaskRepository : Repository<Task, Long>, JpaSpecificationExecutor<Task
     fun findByIdAndProjectOwnerId(id: Long, ownerId: Long): Task?
 
     fun findAllByProjectIdAndProjectOwnerIdOrderById(projectId: Long, ownerId: Long): List<Task>
-
-    @EntityGraph(attributePaths = ["assignee"])
-    override fun findAll(spec: Specification<Task>?, pageable: Pageable): Page<Task>
 
     @Query(
         "select t.status as status, count(t) as n from Task t " +

@@ -8,8 +8,6 @@ import com.taskflow.user.User
 import com.taskflow.user.UserRepository
 import java.time.Clock
 import java.time.LocalDate
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -31,14 +29,7 @@ class TaskService(
     @Transactional(readOnly = true)
     fun list(projectId: Long, ownerId: Long, q: TaskListQuery): PageDto<TaskDto> {
         ownedProject(projectId, ownerId) // 404 for foreign or missing, before anything else
-        val spec = listOfNotNull(
-            TaskSpecifications.scoped(projectId, ownerId),
-            q.status?.let { TaskSpecifications.hasStatus(it) },
-            q.priority?.let { TaskSpecifications.hasPriority(it) },
-            q.assigneeId?.let { TaskSpecifications.assignedTo(it) },
-            TaskSpecifications.sortedBy(q.sortBy, q.ascending),
-        ).reduce { a: Specification<Task>, b: Specification<Task> -> a.and(b) }
-        val page = tasks.findAll(spec, PageRequest.of(q.page, q.size)) // unsorted Pageable: the spec carries the order
+        val page = tasks.findPage(ownerId, projectId, q)
         val today = today()
         return PageDto(page.content.map { TaskDto.from(it, today) }, page.number, page.size, page.totalElements, page.totalPages)
     }
