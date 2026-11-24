@@ -2,5 +2,8 @@ node_modules/
 dist/
 coverage/
 *.log
+# local env files must never enter the image: Vite would embed any VITE_ value in the public bundle
+.env
+.env.*
 Dockerfile
 .dockerignore

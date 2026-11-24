@@ -1,5 +1,7 @@
 build/
 .gradle/
 *.log
+.env
+.env.*
 Dockerfile
 .dockerignore

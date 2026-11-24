@@ -1,5 +1,5 @@
 # One command: docker compose up --build   (needs .env, see .env.example)
-# Browser: http://localhost:${FRONTEND_PORT:-8081}  (nginx; /api is forwarded to the backend, which is not published)
+# Browser: http://localhost:${FRONTEND_PORT:-8081}  (unprivileged nginx on 8080 in the container; /api is forwarded to the backend, which is not published)
 services:
   db:
     image: postgres:17.12
@@ -47,7 +47,12 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "127.0.0.1:${FRONTEND_PORT:-8081}:80"
+      - "127.0.0.1:${FRONTEND_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
 volumes:
