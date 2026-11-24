@@ -33,6 +33,8 @@ class DemoSeedIT : PostgresIT() {
         val bob = users.findByEmail(DemoDataSeeder.BOB_EMAIL)!!
         assertNotEquals("test-only-demo-pw", alice.passwordHash)
         assertTrue(encoder.matches("test-only-demo-pw", alice.passwordHash))
+        assertTrue(encoder.matches("test-only-demo-pw", bob.passwordHash))
+        assertNotEquals(alice.passwordHash, bob.passwordHash, "separate salts per account")
 
         val aliceProjects = projects.findAllByOwnerIdOrderById(alice.id!!)
         assertEquals(2, aliceProjects.size)

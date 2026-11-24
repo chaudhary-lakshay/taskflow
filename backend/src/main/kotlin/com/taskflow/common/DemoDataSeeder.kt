@@ -1,5 +1,6 @@
 package com.taskflow.common
 
+import com.taskflow.auth.PasswordPolicy
 import com.taskflow.project.Project
 import com.taskflow.project.ProjectRepository
 import com.taskflow.task.Task
@@ -38,11 +39,13 @@ class DemoDataSeeder(
         check(demoPassword.isNotBlank()) {
             "Profile 'demo' needs a password for the demo users: set the DEMO_PASSWORD environment variable."
         }
+        // Same rule as registration, so a demo account never has a password the API would refuse.
+        PasswordPolicy.violation(demoPassword)?.let { error("DEMO_PASSWORD is not acceptable: $it") }
         if (users.existsByEmail(ALICE_EMAIL)) return
 
-        val hash = encoder.encode(demoPassword)!!
-        val alice = users.save(User("Alice Demo", ALICE_EMAIL, hash))
-        val bob = users.save(User("Bob Demo", BOB_EMAIL, hash))
+        // One BCrypt hash per account: separate salts.
+        val alice = users.save(User("Alice Demo", ALICE_EMAIL, encoder.encode(demoPassword)!!))
+        val bob = users.save(User("Bob Demo", BOB_EMAIL, encoder.encode(demoPassword)!!))
         val today = LocalDate.now(clock)
 
         val launch = projects.save(Project("Website launch", "Demo project owned by Alice", alice))

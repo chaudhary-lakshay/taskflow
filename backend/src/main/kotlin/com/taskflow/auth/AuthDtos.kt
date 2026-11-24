@@ -12,8 +12,7 @@ data class RegisterRequest(
     val name: String?,
     @field:NotBlank(message = "Email is required") @field:Email(message = "Email is not valid") @field:Size(max = 254, message = "Email must be at most 254 characters")
     val email: String?,
-    @field:NotBlank(message = "Password is required") @field:Size(min = 8, message = "Password must be at least 8 characters")
-    @field:MaxBytes(72, message = "Password must be at most 72 bytes")
+    @field:ValidPassword
     val password: String?,
 ) {
     override fun toString() = "RegisterRequest(email=$email)"
@@ -21,7 +20,7 @@ data class RegisterRequest(
 
 data class LoginRequest(
     @field:NotBlank(message = "Email is required") val email: String?,
-    @field:NotBlank(message = "Password is required") @field:MaxBytes(72, message = "Password must be at most 72 bytes") val password: String?,
+    @field:NotBlank(message = "Password is required") @field:MaxBytes(PasswordPolicy.MAX_BYTES, message = "Password must be at most ${PasswordPolicy.MAX_BYTES} bytes") val password: String?,
 ) {
     override fun toString() = "LoginRequest(email=$email)"
 }
