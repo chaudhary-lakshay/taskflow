@@ -48,19 +48,39 @@ class DemoDataSeeder(
         val bob = users.save(User("Bob Demo", BOB_EMAIL, encoder.encode(demoPassword)))
         val today = LocalDate.now(clock)
 
-        val launch = projects.save(Project("Website launch", "Demo project owned by Alice", alice))
-        val ops = projects.save(Project("Ops checklist", null, alice))
-        val bobsProject = projects.save(Project("Bob's private project", "Alice must not see this", bob))
+        val launch = projects.save(Project("Website relaunch", "Marketing site refresh for the spring launch", alice))
+        val onboarding = projects.save(Project("Team onboarding", null, alice))
+        val interviews = projects.save(Project("Customer interviews", "Private notes: Alice must not see this", bob))
 
+        fun task(title: String, status: TaskStatus, priority: TaskPriority, due: Long?, who: User?, project: Project, note: String? = null) =
+            Task(title, note, status, priority, due?.let { today.plusDays(it) }, who, project)
+
+        val todo = TaskStatus.TODO
+        val doing = TaskStatus.IN_PROGRESS
+        val done = TaskStatus.DONE
+        val high = TaskPriority.HIGH
+        val mid = TaskPriority.MEDIUM
+        val low = TaskPriority.LOW
         tasks.saveAll(
             listOf(
-                Task("Write launch copy", "Draft the landing page text", TaskStatus.TODO, TaskPriority.HIGH, today.plusDays(3), null, launch),
-                Task("Fix broken footer link", null, TaskStatus.TODO, TaskPriority.HIGH, today.minusDays(5), alice, launch),
-                Task("Review pricing page", null, TaskStatus.IN_PROGRESS, TaskPriority.MEDIUM, today.plusDays(1), bob, launch),
-                Task("Set up analytics", null, TaskStatus.DONE, TaskPriority.LOW, today.minusDays(10), alice, launch),
-                Task("Rotate API keys", "Overdue and finished: not highlighted", TaskStatus.DONE, TaskPriority.MEDIUM, today.minusDays(2), null, ops),
-                Task("Update runbook", null, TaskStatus.IN_PROGRESS, TaskPriority.LOW, null, null, ops),
-                Task("Plan Bob's week", null, TaskStatus.TODO, TaskPriority.MEDIUM, today.plusDays(7), bob, bobsProject),
+                task("Write homepage copy", todo, high, 3, null, launch, "First draft of the hero and feature sections"),
+                task("Collect customer testimonials", todo, mid, 9, bob, launch),
+                task("Compress hero images", todo, low, 12, alice, launch),
+                task("Fix broken footer links", todo, high, -3, alice, launch, "Overdue and still open: highlighted on the board"),
+                task("Draft cookie banner text", todo, mid, null, null, launch),
+                task("Review pricing page layout", doing, high, 1, bob, launch),
+                task("Set up analytics dashboard", doing, mid, 5, alice, launch),
+                task("Migrate blog posts", doing, mid, -1, bob, launch),
+                task("Choose hosting provider", done, high, -10, alice, launch),
+                task("Register new domain", done, low, -14, alice, launch),
+                task("Approve brand colours", done, mid, -6, bob, launch, "Overdue date but finished: not highlighted"),
+                task("Plan sitemap and redirects", done, mid, -2, null, launch),
+                task("Prepare laptop checklist", todo, mid, 4, null, onboarding),
+                task("Write first-week guide", todo, high, 7, alice, onboarding),
+                task("Schedule intro meetings", doing, low, null, null, onboarding),
+                task("Set up shared drive access", done, mid, -2, null, onboarding),
+                task("Interview customer A", todo, mid, 2, bob, interviews),
+                task("Summarise interview notes", doing, low, 6, bob, interviews),
             ),
         )
     }

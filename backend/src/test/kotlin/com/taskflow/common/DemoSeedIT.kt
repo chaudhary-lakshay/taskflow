@@ -42,6 +42,7 @@ class DemoSeedIT : PostgresIT() {
         assertEquals(1, projects.findAllByOwnerIdOrderById(bob.id!!).size)
 
         val all = aliceProjects.flatMap { tasks.findAllByProjectIdAndProjectOwnerIdOrderById(it.id!!, alice.id!!) }
+        assertEquals(16, all.size)
         assertEquals(setOf(TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.DONE), all.map { it.status }.toSet())
         assertTrue(all.any { it.dueDate != null && it.dueDate!!.isBefore(LocalDate.now()) && it.status != TaskStatus.DONE }, "an overdue open task")
         assertTrue(all.any { it.assignee?.id == bob.id }, "a task assigned to bob")
