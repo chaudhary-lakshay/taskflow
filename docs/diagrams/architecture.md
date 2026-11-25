@@ -1,5 +1,5 @@
 # Diagrams
-Mermaid source of truth for the as-built system (checked against the code at c921d14). GitHub renders them. The original design sketches are in the Notion plan (page 02); where they differ, these win.
+Mermaid source of truth for the as-built system, reviewed against the code on 25 Nov 2026 (after the page-offset fix). GitHub renders them. The original design sketches are in the Notion plan (page 02); where they differ, these win.
 
 ## 1. System (HLD)
 ```mermaid
@@ -263,7 +263,7 @@ classDiagram
   Task --> TaskStatus
   Task --> TaskPriority
 ```
-`ProjectRepository` and `TaskRepository` extend Spring Data's bare `Repository`, so no method reaches an owned row without an owner id. `UserRepository` is a `JpaRepository` (not owner-scoped).
+`ProjectRepository` and `TaskRepository` extend Spring Data's bare `Repository`: every lookup and query takes the owner id, and `save`, `delete` and `flush` only act on entities loaded through those calls. `UserRepository` is a `JpaRepository` (not owner-scoped).
 
 ## 7. Sequence: register
 ```mermaid
@@ -321,19 +321,21 @@ sequenceDiagram
   participant D as JwtDecoder (HS256)
   participant A as AuthorizationFilter
   participant K as Controller
-  C->>F: request with Authorization: Bearer token
-  F->>D: decode and validate
-  Note over D: signature, algorithm, exp (30 s skew), issuer, exp present, sub = positive number
-  alt token missing or invalid
+  C->>F: request (Authorization: Bearer token, or none)
+  alt token presented and invalid
+    F->>D: decode and validate
+    Note over D: signature, algorithm, exp (30 s skew), issuer, exp present, sub = positive number
     F-->>C: 401 UNAUTHORIZED + WWW-Authenticate: Bearer
-  else valid
-    F->>A: Jwt principal
-    alt path is register, login or GET /actuator/health
+  else valid token, or no token
+    F->>A: Jwt principal, or anonymous
+    alt POST register or login, GET /actuator/health
       A->>K: allowed without a token
-    else any other path
+    else other path with a valid token
       A->>K: authenticated
+      K->>K: ownerId = jwt.userId()
+    else other path, no token
+      A-->>C: 401 UNAUTHORIZED
     end
-    K->>K: ownerId = jwt.userId()
   end
 ```
 There is no per-request user lookup: a valid token is trusted until it expires. Ownership is enforced later, in the service (diagram 10).
@@ -358,7 +360,10 @@ sequenceDiagram
   end
   alt missing or owned by someone else
     S-->>C: 404 NOT_FOUND (same body for both)
-  else owned
+  else owned and status change
+    S->>TR: set status, flush
+    S-->>C: 200 TaskDto
+  else owned and create or update
     S->>S: due date rule (past date refused on create, on update only if changed), assignee exists
     alt rule broken
       S-->>C: 400 VALIDATION_ERROR with fieldErrors
@@ -394,7 +399,7 @@ sequenceDiagram
   participant Q as TaskPageQueryImpl
   participant DB as PostgreSQL
   UI->>K: GET /projects/{id}/tasks?status&priority&assigneeId&sortBy&direction&page&size=10
-  K->>K: parseQuery: sortBy, direction, page >= 0, size 1..100
+  K->>K: parseQuery: sortBy, direction, page >= 0, size 1..100, page*size <= Int.MAX
   alt invalid
     K-->>UI: 400 VALIDATION_ERROR (one field error per parameter)
   else valid

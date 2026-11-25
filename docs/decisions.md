@@ -36,7 +36,7 @@
 - Spring Security's library validators accept a missing `exp`, so a small validator additionally requires `exp` and a positive numeric `sub`.
 - Register returns the user (201) and does not log in; the frontend logs in afterwards (page 03). **[ASSUMPTION]**
 - `GET /actuator/health` is the only public non-auth endpoint; it exposes status only.
-- No inherited unscoped repository methods are used for user-owned resources: T03 services must call the owner-scoped finders from T01 (`findByIdAndOwnerId`, `findByIdAndProjectOwnerId`). Note `JpaRepository.findById/findAll/deleteById` on Project and Task remain callable and must not be used by services.
+- `ProjectRepository` and `TaskRepository` extend the bare `Repository` (not `JpaRepository`), so services can only call the reviewed methods, and `RepositoryGuardTest` pins their signatures. Lookups and queries take the owner id (`findByIdAndOwnerId`, `findByIdAndProjectOwnerId`, `findPage`); `save`, `delete` and `flush` act on entities that were loaded through those scoped calls.
 - A duplicate email is recognised by SQLState 23505 plus the constraint name `uq_users_email` (PostgreSQL server error or Hibernate `constraintName`), never by message text; any other integrity violation is rethrown (500).
 - The password rule lives in one place (`PasswordPolicy`, used by `@ValidPassword` on registration and by the demo seeder). Login only bounds the length (72 bytes) and does not enforce the minimum.
 - The dummy hash for unknown-email logins is built when `AuthService` is constructed; every login performs exactly one `matches()`. Timing equality is not claimed: one local sample showed medians of 67.8 ms (wrong password) and 63.8 ms (unknown email), not a proof.

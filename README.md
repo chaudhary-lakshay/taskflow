@@ -77,7 +77,7 @@ Diagrams (system, components, use cases, ERD, class diagrams, register/login/JWT
 |---|---|---|
 | Repository | Spring Data repositories. `ProjectRepository` and `TaskRepository` are the guarded ones: `RepositoryGuardTest` keeps their surface closed. `UserRepository` is separate and not owner-scoped: email lookup for registration and login, and a name-only directory search (id and name) for the assignee lookup | no way to load a project or task without naming its owner |
 | Specification | `task/TaskSpecifications.kt`, composed in `TaskPageQuery` | optional filters (status, priority, assignee) on top of a mandatory project + owner scope |
-| Strategy | `task/TaskSortStrategy.kt` (`DueDateSort`, `PrioritySort`) | each sort is one rule; priority sorts by rank HIGH > MEDIUM > LOW, undated tasks last, id as final tie-break so pages never repeat or skip |
+| Strategy | `task/TaskSortStrategy.kt` (`DueDateSort`, `PrioritySort`) | each sort is one rule; priority sorts by rank HIGH > MEDIUM > LOW, undated tasks last, id as final tie-break, so the order is deterministic for an unchanged result set (offset paging can still shift if tasks change between page requests) |
 | DTO mapping | `from(...)` factories in `*Dtos.kt` | the API shape is separate from the entities |
 
 ### State management (frontend)

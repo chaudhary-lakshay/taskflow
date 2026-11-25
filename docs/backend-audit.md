@@ -1,5 +1,5 @@
 # Backend audit
-Independent read-only review by Codex (GPT) of the backend at c921d14, with the follow-up decisions. Evidence is code or test lines; "unverified" means no test ran for it. Fixes are in the commits listed at the end.
+Independent read-only review by Codex (GPT) of the backend at c921d14, with the follow-up decisions. Evidence is code or test lines; "unverified" means no test ran for it. Fixes: 01aed67 (A1), a49f8f6 (A4), 344bbf2 (A8 and the A2/A3 comments), 222f28b and this follow-up (docs).
 
 | ID | Finding | Evidence | Decision |
 |---|---|---|---|
@@ -10,8 +10,8 @@ Independent read-only review by Codex (GPT) of the backend at c921d14, with the 
 | A5 | `@Size` counts UTF-16 units, so 61 emoji exceed a "120 character" title | Jakarta `@Size` semantics | **Documented, not changed.** The frontend counts the same way (`String.length`), so both sides agree; a code-point validator would make them differ |
 | A6 | The demo seeder treats Alice's existence as "already seeded" | `DemoDataSeeder.kt` | **No change.** Seeding is one transaction, so a partial seed cannot come from the seeder. A lone existing demo email means someone registered it, and the seeder must not touch that account |
 | A7 | Stale status text and test counts in the docs | `architecture.md`, `testing.md` | **Fixed.** Counts now match the Gradle reports (129 backend tests) |
-| A8 | 20 `!!` assertions | listed in the audit | **Partly changed.** The 5 on `encoder.encode(...)` were dropped (the call returns a platform type, so they guarded nothing). The rest stay: request fields are checked by `@NotBlank`/`@NotNull` before the service runs, and generated ids are non-null after `save`. Replacing them would need a command or mapper layer that adds more code than it removes |
-| A9 | `spring-boot-starter-security` is also pulled in by the resource-server starter | `build.gradle.kts` | **No change.** Declaring the main starter is harmless and says what the app uses. Unverified: the dependency graph was not compared |
+| A8 | 20 `!!` assertions (16 remain) | listed in the audit | **Partly changed.** The 4 on `encoder.encode(...)` were dropped (the call returns a platform type, so they guarded nothing). The rest stay: request fields are checked by `@NotBlank`/`@NotNull` before the service runs, and generated ids are non-null after `save`. Replacing them would need a command or mapper layer that adds more code than it removes |
+| A9 | `spring-boot-starter-security` is declared next to the resource-server starter, which already brings the underlying Spring Security modules | `build.gradle.kts` | **No change.** Declaring the main starter is harmless and says what the app uses. Unverified: the dependency graph was not compared |
 | A10 | Duplicate-email pre-check costs one extra query and cannot prove uniqueness | `AuthService.kt` | **No change.** The unique constraint decides (`AuthRaceIT` covers the race); the pre-check only avoids an exception on the common path |
 | A11-A15 | Keep: bare `Repository`, Specification, Strategy, no N+1 on the task page, concrete classes without service interfaces | `TaskRepository`, `TaskPageQuery`, `TaskSortStrategy`, `open-in-view: false` | **Keep.** Each pattern is required by the assignment and small |
 
