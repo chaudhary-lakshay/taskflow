@@ -263,7 +263,7 @@ classDiagram
   Task --> TaskStatus
   Task --> TaskPriority
 ```
-`ProjectRepository` and `TaskRepository` extend Spring Data's bare `Repository`: every lookup and query takes the owner id, and `save`, `delete` and `flush` only act on entities loaded through those calls. `UserRepository` is a `JpaRepository` (not owner-scoped).
+`ProjectRepository` and `TaskRepository` extend Spring Data's bare `Repository`: every lookup and query takes the owner id. Mutations act on entities loaded through scoped lookups or new entities attached to the authenticated owner or an owned project. `UserRepository` is a `JpaRepository` (not owner-scoped).
 
 ## 7. Sequence: register
 ```mermaid
@@ -322,18 +322,23 @@ sequenceDiagram
   participant A as AuthorizationFilter
   participant K as Controller
   C->>F: request (Authorization: Bearer token, or none)
-  alt token presented and invalid
+  alt token presented
     F->>D: decode and validate
     Note over D: signature, algorithm, exp (30 s skew), issuer, exp present, sub = positive number
-    F-->>C: 401 UNAUTHORIZED + WWW-Authenticate: Bearer
-  else valid token, or no token
-    F->>A: Jwt principal, or anonymous
+    alt invalid token
+      D-->>F: validation failure
+      F-->>C: 401 UNAUTHORIZED + WWW-Authenticate: Bearer
+    else valid token
+      D-->>F: validated JWT
+      F->>A: authenticated principal
+      A->>K: permitted request
+      Note over K: protected controllers derive ownerId from jwt.userId()
+    end
+  else no token
+    F->>A: anonymous request
     alt POST register or login, GET /actuator/health
-      A->>K: allowed without a token
-    else other path with a valid token
-      A->>K: authenticated
-      K->>K: ownerId = jwt.userId()
-    else other path, no token
+      A->>K: permitted request
+    else protected path
       A-->>C: 401 UNAUTHORIZED
     end
   end
