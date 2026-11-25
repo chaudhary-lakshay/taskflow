@@ -4,6 +4,18 @@
 
 TaskFlow is a task management application built with Kotlin and Spring Boot. Users can create projects, organise tasks on a Kanban board, assign tasks and track progress.
 
+## Demo
+
+![Moving tasks between columns updates the counts](docs/demo/board-status-change.gif)
+
+*Changing a task's status moves the card and updates the summary and overdue counts.*
+
+![Creating a task, filtering by priority and returning to projects](docs/demo/create-filter-navigate.gif)
+
+*Creating a task with an assignee, filtering by priority, changing the sort and returning to the project list.*
+
+Recorded from the running app with the [sample data](#sample-data).
+
 ## Features
 
 - Register and sign in using JWT authentication.
