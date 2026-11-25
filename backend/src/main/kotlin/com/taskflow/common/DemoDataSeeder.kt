@@ -44,8 +44,8 @@ class DemoDataSeeder(
         if (users.existsByEmail(ALICE_EMAIL)) return
 
         // One BCrypt hash per account: separate salts.
-        val alice = users.save(User("Alice Demo", ALICE_EMAIL, encoder.encode(demoPassword)!!))
-        val bob = users.save(User("Bob Demo", BOB_EMAIL, encoder.encode(demoPassword)!!))
+        val alice = users.save(User("Alice Demo", ALICE_EMAIL, encoder.encode(demoPassword)))
+        val bob = users.save(User("Bob Demo", BOB_EMAIL, encoder.encode(demoPassword)))
         val today = LocalDate.now(clock)
 
         val launch = projects.save(Project("Website launch", "Demo project owned by Alice", alice))

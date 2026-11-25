@@ -7,7 +7,8 @@ import java.time.LocalDate
 
 /**
  * Strategy pattern: each supported sort field is one ordering rule. Every strategy ends with id
- * ascending, so pages never repeat or skip rows when the sort key ties.
+ * ascending, so the order is total for a fixed result set. Offset paging can still repeat or skip a
+ * row if tasks are added, deleted or change status between two page requests.
  */
 sealed interface TaskSortStrategy {
     val defaultAscending: Boolean

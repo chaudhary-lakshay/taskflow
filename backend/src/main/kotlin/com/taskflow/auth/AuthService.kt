@@ -21,14 +21,14 @@ class AuthService(
 ) {
     // Compared against when the email is unknown, so every login does exactly one hash comparison.
     // Built here, not lazily, so the first unknown-email login is not the slow one.
-    private val dummyHash: String = encoder.encode("not-a-real-password")!!
+    private val dummyHash: String = encoder.encode("not-a-real-password")
 
     @Transactional
     fun register(name: String, email: String, password: String): User {
         val normalized = User.normalizeEmail(email)
         if (users.existsByEmail(normalized)) throw DuplicateEmailException()
         try {
-            return users.saveAndFlush(User(name.trim(), normalized, encoder.encode(password)!!))
+            return users.saveAndFlush(User(name.trim(), normalized, encoder.encode(password)))
         } catch (e: DataIntegrityViolationException) {
             // Two registrations racing past existsByEmail: the unique constraint decides.
             if (e.isEmailUniqueViolation()) throw DuplicateEmailException()

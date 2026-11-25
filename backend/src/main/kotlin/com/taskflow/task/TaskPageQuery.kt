@@ -39,6 +39,7 @@ class TaskPageQueryImpl(private val em: EntityManager) : TaskPageQuery {
             .setMaxResults(query.size)
             .resultList
 
+        // Separate statement: under Read Committed it can see a newer state than the page above.
         val countQuery = cb.createQuery(Long::class.javaObjectType)
         val countRoot = countQuery.from(Task::class.java)
         countQuery.select(cb.count(countRoot)).where(spec.toPredicate(countRoot, countQuery, cb))
