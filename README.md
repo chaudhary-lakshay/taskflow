@@ -42,7 +42,7 @@ Gradle does not read `.env`; export the variables in the shell that runs it.
 ## Tests
 ```bash
 scripts/verify.sh                      # everything: backend tests + frontend lint, typecheck, Jest, build
-cd backend && ./gradlew test           # 128 tests; needs Docker (Testcontainers starts PostgreSQL 17); writes a JaCoCo report to build/reports/jacoco/test/html
+cd backend && ./gradlew test           # 129 tests; needs Docker (Testcontainers starts PostgreSQL 17); writes a JaCoCo report to build/reports/jacoco/test/html
 cd frontend && npm run lint && npm run typecheck && npm test && npm run build   # 76 Jest tests
 ```
 - Backend: JUnit 5 + MockK service tests with an injected `Clock`; `@SpringBootTest` + MockMvc integration tests on **real PostgreSQL** with real signed JWTs and two users (ownership); JWT, repository, schema and query-ordering tests. Line coverage 97 % (information, not a gate).
@@ -116,4 +116,4 @@ All need `Authorization: Bearer <token>` and are owner-only (someone else's proj
 
 
 ## Docs
-`docs/`: requirements, API contract, architecture, diagrams, decisions (D01–D12 and per-task notes), testing and traceability.
+`docs/`: requirements, API contract, architecture, [diagrams](docs/diagrams/architecture.md), decisions (D01–D12 and per-task notes), testing and traceability, and a short [backend audit](docs/backend-audit.md).
