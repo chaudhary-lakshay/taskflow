@@ -205,6 +205,15 @@ class TaskListIT : ApiIT() {
     }
 
     @Test
+    fun `a page whose offset does not fit an Int is a 400, the largest valid page is an empty 200`() {
+        val p = project(a)
+        // 21,474,836 * 100 = 2,147,483,600 fits; 21,474,837 * 100 wraps to a negative Int offset.
+        assertEquals(0, list(p, "page" to 21_474_836, "size" to 100)["content"].size())
+        get("/api/projects/$p/tasks", a, "page" to 21_474_837, "size" to 100).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("VALIDATION_ERROR")).andExpect(jsonPath("$.fieldErrors.page").exists())
+    }
+
+    @Test
     fun `several invalid parameters are all reported together`() {
         val p = project(a)
         get("/api/projects/$p/tasks", a, "sortBy" to "x", "size" to 500, "page" to -2).andExpect(status().isBadRequest)

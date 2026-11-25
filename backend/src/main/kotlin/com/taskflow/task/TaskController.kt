@@ -73,6 +73,8 @@ class TaskController(private val tasks: TaskService) {
             }
             if (page < 0) errors["page"] = "page must be 0 or greater"
             if (size < 1 || size > MAX_PAGE_SIZE) errors["size"] = "size must be between 1 and " + MAX_PAGE_SIZE
+            // The offset (page * size) is an Int downstream; a larger one would wrap negative and end as a 500.
+            else if (page.toLong() * size > Int.MAX_VALUE) errors["page"] = "page is too large"
             if (errors.isNotEmpty()) throw RequestValidationException(errors)
             return TaskListQuery(status, priority, assigneeId, field!!, ascending, page, size)
         }
