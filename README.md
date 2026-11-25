@@ -1,5 +1,7 @@
 # TaskFlow
 
+**README** | [Architecture & UML](docs/diagrams/architecture.md)
+
 A small team task tracker: a **Kotlin + Spring Boot 3.5** REST API, a **React 19 + TypeScript** frontend and **PostgreSQL 17**. Users register, create projects, and manage tasks on a three-column board (To Do, In Progress, Done) with filters, sorting, paging and an overdue summary. Every project and task is private to its owner.
 
 Built as a take-home assignment. All mandatory requirements are implemented; of the bonus items, Docker Compose, Flyway migrations and a GitHub Actions workflow are in, **OpenAPI/Swagger and the task activity log are not implemented** (see [Known limitations](#known-limitations-and-next-steps)).

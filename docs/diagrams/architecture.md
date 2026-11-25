@@ -1,4 +1,7 @@
-# Diagrams
+# Architecture & UML
+
+[README](../../README.md) | **Architecture & UML**
+
 Mermaid source of truth for the as-built system, reviewed against the code on 25 Nov 2026 (after the page-offset fix). GitHub renders them. The original design sketches are in the Notion plan (page 02); where they differ, these win.
 
 ## 1. System (HLD)
