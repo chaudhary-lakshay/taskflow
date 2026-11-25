@@ -67,7 +67,7 @@ cd frontend && npm run lint && npm run typecheck && npm test && npm run build   
 ```
 Browser → nginx (static React build, /api proxy) → Spring Boot API → PostgreSQL
 ```
-Diagrams (system, layers, data model, frontend data flow, status change) are in [`docs/diagrams/architecture.md`](docs/diagrams/architecture.md); written decisions in `docs/decisions.md`, the API in `docs/api-contract.md`.
+Diagrams (system, components, use cases, ERD, class diagrams, register/login/JWT/task/paging sequences, state machine, frontend data flow, deployment) are in [`docs/diagrams/architecture.md`](docs/diagrams/architecture.md); written decisions in `docs/decisions.md`, the API in `docs/api-contract.md`.
 
 - **Backend**: modular monolith, feature packages (`auth`, `project`, `task`, `user`, `security`, `common`), each controller → service → repository. DTOs only; entities are never returned. A `@RestControllerAdvice` gives every error the same shape `{status, code, message, fieldErrors?}`, including 401 from the security filters. Flyway owns the schema (`ddl-auto: validate`).
 - **Frontend**: React functional components and hooks, a separate API layer (`src/api`, one `fetch` wrapper), reusable components (`TaskCard`, `Modal`, `Button`, `FormField`, `SelectField`).
